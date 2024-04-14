@@ -22,6 +22,7 @@ body {
   align-items: center;
   line-height: 100%;
   padding: 26px 24px;
+  border-radius: 45px;
 }
 
 #background {
