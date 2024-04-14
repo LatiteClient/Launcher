@@ -1,0 +1,294 @@
+body {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.preventSelect {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+#launcher {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  height: 506px;
+  width: 714px;
+  align-items: center;
+  line-height: 100%;
+  padding: 26px 24px;
+}
+
+#background {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+#header {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 39px;
+  color: #fff;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+#brand {
+  display: flex;
+  justify-content: space-between;
+  gap: 19px;
+}
+
+#logoImg {
+  object-fit: auto;
+  object-position: center;
+  width: 66px;
+  border-radius: 50%;
+}
+
+#name {
+  font-family: Segoe UI, sans-serif;
+  flex-grow: 1;
+  margin: auto 0;
+}
+
+.close {
+  object-fit: auto;
+  object-position: center;
+  width: 48px;
+  margin: auto 0;
+  border-radius: 100px;
+  cursor: pointer;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+  position: relative;
+  height: 100%;
+}
+
+#launchButton {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(96deg, #10a9a8 0%, #5f65b9 100%);
+  box-shadow: 0px 0px 27px 0px #3788b1, 0px 4px 7px 0px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 230px;
+  height: 76px;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+#launchButton:hover {
+  filter: brightness(116%);
+}
+
+#launchButton:active {
+  filter: brightness(84%);
+}
+
+#centerLaunch {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#launchText {
+  color: #fff;
+  font: 700 38px Segoe UI, sans-serif;
+  line-height: 0.9;
+  font-size: 34px;
+
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+#launchSubtext {
+  color: #f0f0f0;
+  align-self: center;
+  font: 350 14px Segoe UI, sans-serif;
+
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+#selectVersion {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+#selectMenu {
+  position: absolute;
+  bottom: 25px;
+}
+
+.center::after {
+  content: "";
+  position: relative;
+  width: 214px;
+  height: 34px;
+  pointer-events: none;
+}
+
+#selectMenu #selectButton {
+  display: flex;
+  position: relative;
+  background-color: #8383832e;
+  width: 214px;
+  height: 34px;
+  font-size: 18px;
+  font-weight: 400;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: 3px solid #83838312;
+  box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s ease-out;
+}
+
+#selectButton:hover {
+  background-color: #83838340;
+}
+
+#downArrow {
+  position: absolute;
+  right: 5px;
+  transition: all 0.2s ease-out;
+}
+
+#selectMenu.active .downArrow {
+  transform: rotate(180deg);
+}
+
+#selectMenu .options {
+  position: relative;
+  /* padding: 20px; */
+  margin-top: 10px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  background-color: #8383832e;
+  outline: 3px solid #83838312;
+  box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.3);
+  width: 214px;
+  overflow: hidden;
+  transition: opacity 0.2s ease-out;
+}
+
+#selectMenu.active .options {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.options .option {
+  display: flex;
+  height: 55px;
+  cursor: pointer;
+  padding: 0 16px;
+  /* border-radius: 8px; */
+  align-items: center;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease-out;
+}
+
+.options .option:hover {
+  background-color: #83838312;
+}
+
+.option i {
+  font-size: 25px;
+  margin-right: 12px;
+}
+
+.option .optionText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+p {
+  position: relative;
+  color: #fff;
+  white-space: nowrap;
+  font: 400 14px Segoe UI, sans-serif;
+
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+#misc {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 23px;
+  color: #fff;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+#discord {
+  aspect-ratio: 1.25;
+  object-fit: auto;
+  object-position: center;
+  width: 61px;
+  cursor: pointer;
+}
+
+#infobar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.info {
+  font-family: Segoe UI, sans-serif;
+  text-decoration-line: underline;
+  cursor: pointer;
+}
+
+#settings {
+  aspect-ratio: 1;
+  object-fit: auto;
+  object-position: center;
+  width: 49px;
+  cursor: pointer;
+}
