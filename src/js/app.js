@@ -1,18 +1,33 @@
+function closeWindowAnimation() {
+	var launcher = document.querySelector(".launcher");
+	launcher.classList.toggle("launcherCloseAnimation");
+}
+
+let timeout;
+
+function closeWindowTimeout() {
+  timeout = setTimeout(closeWindow, 500);
+}
+
+function closeWindow() {
+	window.close();
+}
+
 const optionMenu = document.querySelector(".select-menu"),
-  selectBtn = optionMenu.querySelector(".select-btn"),
-  options = optionMenu.querySelectorAll(".option"),
-  sBtn_text = optionMenu.querySelector(".sBtn-text");
+	selectBtn = optionMenu.querySelector(".select-btn"),
+	options = optionMenu.querySelectorAll(".option"),
+	sBtn_text = optionMenu.querySelector(".sBtn-text");
 
 selectBtn.addEventListener("click", () =>
-  optionMenu.classList.toggle("active")
+	optionMenu.classList.toggle("active")
 );
 
 /*options.forEach((option) => {
   option.addEventListener("click", () => {
-    let selectedOption = option.querySelector(".option-text").innerText;
-    sBtn_text.innerText = selectedOption;
+	let selectedOption = option.querySelector(".option-text").innerText;
+	sBtn_text.innerText = selectedOption;
 
-    optionMenu.classList.remove("active");
+	optionMenu.classList.remove("active");
   });
 });*/
 

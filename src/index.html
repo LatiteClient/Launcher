@@ -1,38 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/styling.css" />
-    <script src="./js/app.js"></script>
-    <title>Latite V2 Injector</title>
-  </head>
-  <body>
-    <div id="launcher">
-      <img loading="lazy" src="./img/background.png" id="background" />
-      <div id="header" data-tauri-drag-region>
-        <div id="brand">
-          <img loading="lazy" src="./img/latite.png" id="logoImg" />
-          <div id="name">Latite Client</div>
-        </div>
-        <img
-          loading="lazy"
-          src="./img/close.svg"
-          class="close"
-          onclick="window.close()"
-        />
-      </div>
-      <p class="preventSelect">
-        Right click the launch button to inject custom DLLs
-      </p>
-      <div class="center" data-tauri-drag-region>
-        <div id="launchButton">
-          <div id="centerLaunch">
-            <div id="launchText">LAUNCH</div>
-            <div id="launchSubtext">Status: Idle</div>
-          </div>
-        </div>
-        <!--
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" href="./css/styling.css" />
+	<script src="./js/app.js"></script>
+	<title>Latite V2 Injector</title>
+</head>
+
+<body>
+	<div class="launcher">
+		<img loading="lazy" src="./img/background.png" id="background" />
+		<div id="header" data-tauri-drag-region>
+			<div id="brand">
+				<img loading="lazy" src="./img/latite.png" id="logoImg" />
+				<div id="name">Latite Client</div>
+			</div>
+			<img loading="lazy" src="./img/close.svg" class="close" onclick="closeWindowAnimation(); closeWindowTimeout();" />
+		</div>
+		<div class="center" data-tauri-drag-region>
+			<div id="launchButton">
+				<div id="centerLaunch">
+					<div id="launchText">LAUNCH</div>
+					<div id="launchSubtext">Status: Idle</div>
+				</div>
+			</div>
+			<p class="preventSelect">
+				Right click the launch button to inject custom DLLs
+			</p>
+			<!--
           <div id="selectMenu">
             <div id="selectButton">
               <span id="selectVersion">Select a version</span>
@@ -51,20 +48,16 @@
             </ul>
           </div>
         -->
-      </div>
-      <div id="misc">
-        <img
-          loading="lazy"
-          src="./img/discord.svg"
-          id="discord"
-          onclick="window.open('https://discord.gg/latiteclient/');"
-        />
-        <div id="infobar">
-          <div class="info">Changelog</div>
-          <div class="info">Credits</div>
-          <img loading="lazy" src="img/settings.svg" id="settings" />
-        </div>
-      </div>
-    </div>
-  </body>
+		</div>
+		<div id="misc">
+			<img loading="lazy" src="./img/discord.svg" id="discord" onclick="window.open('https://discord.gg/latiteclient/');" />
+			<div id="infobar">
+				<div class="info">Changelog</div>
+				<div class="info">Credits</div>
+				<img loading="lazy" src="img/settings.svg" id="settings" />
+			</div>
+		</div>
+	</div>
+</body>
+
 </html>
