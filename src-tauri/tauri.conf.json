@@ -58,7 +58,7 @@
       {
         "fullscreen": false,
         "resizable": false,
-        "title": "tauri-app",
+        "title": "Latite Client",
         "width": 762,
         "height": 558,
         "decorations": false,
