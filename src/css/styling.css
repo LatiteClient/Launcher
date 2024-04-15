@@ -20,7 +20,6 @@ body {
 	flex-direction: column;
 	overflow: hidden;
 	position: relative;
-	display: flex;
 	height: 506px;
 	width: 714px;
 	align-items: center;

@@ -3,7 +3,7 @@
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "devPath": "http://localhost:1420",
-    "distDir": "../dist",
+    "distDir": "../src/dist",
     "withGlobalTauri": true
   },
   "package": {
@@ -59,8 +59,8 @@
         "fullscreen": false,
         "resizable": false,
         "title": "tauri-app",
-        "width": 703,
-        "height": 506,
+        "width": 762,
+        "height": 558,
         "decorations": false,
         "transparent": true
       }
