@@ -26,8 +26,9 @@ body {
 	line-height: 100%;
 	padding: 26px 24px;
 	border-radius: 40px;
-	filter: opacity(1);
-	animation: openAnimation 0.5s ease;
+	filter: opacity(0);
+	animation: openAnimation 0.5s ease forwards;
+	animation-delay: 1.5s;
 	transition: all 0.5s ease;
 }
 
@@ -147,7 +148,7 @@ body {
 	width: 250px;
 	height: 86px;
 	cursor: pointer;
-	transition: filter 0.15s ease-out, scale 0.25s cubic-bezier(.09,.63,.55,1);
+	transition: filter 0.15s ease-out, scale 0.22s cubic-bezier(.09,.63,.55,1);
 }
 
 #launchButton:hover {
