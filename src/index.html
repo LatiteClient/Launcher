@@ -17,7 +17,8 @@
 				<img loading="lazy" src="./img/latite.png" id="logoImg" />
 				<div id="name">Latite Client</div>
 			</div>
-			<img loading="lazy" src="./img/close.svg" class="close" onclick="closeWindowAnimation(); closeWindowTimeout();" />
+			<img loading="lazy" src="./img/close.svg" class="close"
+				onclick="closeWindowAnimation(); closeWindowTimeout();" />
 		</div>
 		<div class="center" data-tauri-drag-region>
 			<div id="launchButton">
@@ -50,7 +51,8 @@
         -->
 		</div>
 		<div id="misc">
-			<img loading="lazy" src="./img/discord.svg" id="discord" onclick="window.open('https://discord.gg/latiteclient/');" />
+			<img loading="lazy" src="./img/discord.svg" id="discord"
+				onclick="window.open('https://discord.gg/latiteclient/');" />
 			<div id="infobar">
 				<div class="info">Changelog</div>
 				<div class="info">Credits</div>
@@ -61,22 +63,22 @@
 </body>
 
 <script>
-  function closeWindowAnimation() {
-	var launcher = document.querySelector(".launcher");
-	launcher.classList.toggle("launcherCloseAnimation");
-}
+	function closeWindowAnimation() {
+		var launcher = document.querySelector(".launcher");
+		launcher.classList.toggle("launcherCloseAnimation");
+	}
 
-let timeout;
+	let timeout;
 
-function closeWindowTimeout() {
-  timeout = setTimeout(closeWindow, 500);
-}
+	function closeWindowTimeout() {
+		timeout = setTimeout(closeWindow, 500);
+	}
 
-function closeWindow() {
-	window.close();
-}
+	function closeWindow() {
+		window.close();
+	}
 
-document.addEventListener("contextmenu", (event) => event.preventDefault());
+	document.addEventListener("contextmenu", (event) => event.preventDefault());
 </script>
 
 </html>
