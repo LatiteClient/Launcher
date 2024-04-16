@@ -147,18 +147,16 @@ body {
 	width: 250px;
 	height: 86px;
 	cursor: pointer;
-	transition: filter 0.15s ease-out, scale 0.3s cubic-bezier(.31,1.9,.49,.68);
+	transition: filter 0.15s ease-out, scale 0.25s cubic-bezier(.09,.63,.55,1);
 }
 
 #launchButton:hover {
 	filter: brightness(116%);
-	scale: 1.1;
 }
 
 #launchButton:active {
 	filter: brightness(84%);
-	scale: 0.9;
-	transition: scale 0.25s cubic-bezier(.09,.63,.55,1);
+	scale: 0.92;
 }
 
 #centerLaunch {
