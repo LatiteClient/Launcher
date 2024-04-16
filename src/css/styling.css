@@ -28,13 +28,14 @@ body {
 	border-radius: 40px;
 	filter: opacity(0);
 	animation: openAnimation 0.5s ease forwards;
-	animation-delay: 1.5s;
+	animation-delay: 0.5s;
 	transition: all 0.5s ease;
 }
 
 @keyframes openAnimation {
 	0% {
 		filter: opacity(0);
+		scale: 0.8;
 	}
 	100% {
 		filter: opacity(1);
@@ -42,7 +43,8 @@ body {
 }
 
 .launcherCloseAnimation {
-	filter: opacity(0);
+	opacity: 0;
+	transform: scale(0.8);
 }
 
 #background {
