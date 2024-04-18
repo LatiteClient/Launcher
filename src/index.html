@@ -11,16 +11,25 @@
 
 <body class="preventSelect">
 	<div class="launcher">
-		<img loading="lazy" src="./img/background.png" id="background" />
-		<div id="header" data-tauri-drag-region>
-			<div id="brand">
-				<img loading="lazy" src="./img/latite.png" id="logoImg" />
-				<div id="name">Latite Client</div>
+		<img loading="lazy" src="./img/background.png" class="background" />
+
+		<div class="header" data-tauri-drag-region>
+			<div class="brand">
+				<img loading="lazy" src="./img/latite.png" class="logoImg" />
+				<div class="name">Latite Client</div>
 			</div>
 			<img loading="lazy" src="./img/close.svg" class="close"
 				onclick="closeWindowAnimation(); closeWindowTimeout();" />
 		</div>
-		<div class="center" data-tauri-drag-region>
+		<div class="settingsheader" data-tauri-drag-region>
+			<div class="brand">
+				<img loading="lazy" src="./img/latite.png" class="logoImg" />
+				<div class="name">Settings</div>
+			</div>
+			<img loading="lazy" src="./img/arrowback.svg" class="close" onclick="returnToHome()" />
+		</div>
+
+		<div class="center hide" data-tauri-drag-region>
 			<div id="launchButton">
 				<div id="centerLaunch">
 					<div id="launchText">LAUNCH</div>
@@ -50,19 +59,76 @@
           </div>
         -->
 		</div>
-		<div id="misc">
+		<div class="centersettings" data-tauri-drag-region>
+			<div class="settingsection">
+				<h2>Discord RPC</h2>
+				<div class="settingoption">
+					<p>Discord Rich Presence</p>
+					<input type="checkbox">
+				</div>
+				<div class="settingoption">
+					<p>Server server in RPC</p>
+					<input type="checkbox">
+				</div>
+				<div class="settingoption">
+					<p>Show Minecraft Version in RPC</p>
+					<input type="checkbox">
+				</div>
+				<div class="settingoption">
+					<p>Show time played in RPC</p>
+					<input type="checkbox">
+				</div>
+			</div>
+			<div class="settingsection">
+				<h2>Miscellaneous</h2>
+				<div class="settingoption">
+					<p>Hide to system tray on close</p>
+					<input type="checkbox" checked>
+				</div>
+				<div class="settingoption">
+					<p>Close after Injected</p>
+					<input type="checkbox">
+				</div>
+			</div>
+		</div>
+		<div id="misc" class="hide">
 			<img loading="lazy" src="./img/discord.svg" id="discord"
 				onclick="window.open('https://discord.gg/latiteclient/');" />
 			<div id="infobar">
 				<div class="info">Changelog</div>
 				<div class="info">Credits</div>
-				<img loading="lazy" src="img/settings.svg" id="settings" />
+				<img loading="lazy" src="img/settings.svg" id="settings" onclick="hide();" />
 			</div>
 		</div>
 	</div>
 </body>
 
 <script>
+
+	function hide() {
+		var hide = document.querySelectorAll(".hide");
+		var settingsPage = document.querySelector(".centersettings");
+		var settingsHeader = document.querySelector(".settingsheader");
+		var header = document.querySelector(".header");
+
+		hide.forEach((hide) => hide.style.display = "none");
+		settingsPage.style.display = "flex";
+		settingsHeader.style.display = "flex";
+		header.style.display = "none";
+	}
+
+	function returnToHome() {
+		var hide = document.querySelectorAll(".hide");
+		var settingsPage = document.querySelector(".centersettings");
+		var settingsHeader = document.querySelector(".settingsheader");
+		var header = document.querySelector(".header");
+
+		hide.forEach((hide) => hide.style.display = "flex");
+		settingsPage.style.display = "none";
+		settingsHeader.style.display = "none";
+		header.style.display = "flex";
+	}
+
 	function closeWindowAnimation() {
 		var launcher = document.querySelector(".launcher");
 		launcher.classList.toggle("launcherCloseAnimation");
@@ -79,6 +145,7 @@
 	}
 
 	document.addEventListener("contextmenu", (event) => event.preventDefault());
+
 </script>
 
 </html>

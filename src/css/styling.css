@@ -23,7 +23,7 @@ body {
 	height: 506px;
 	width: 714px;
 	align-items: center;
-	line-height: 100%;
+	/* line-height: 100%; */
 	padding: 26px 24px;
 	border-radius: 40px;
 	filter: opacity(0);
@@ -37,6 +37,7 @@ body {
 		filter: opacity(0);
 		scale: 0.9;
 	}
+
 	100% {
 		filter: opacity(1);
 	}
@@ -47,7 +48,7 @@ body {
 	transform: scale(0.9);
 }
 
-#background {
+.background {
 	position: absolute;
 	inset: 0;
 	height: 100%;
@@ -57,10 +58,9 @@ body {
 	pointer-events: none;
 }
 
-#header {
+.header, .settingsheader {
 	position: relative;
 	align-self: stretch;
-	display: flex;
 	width: 100%;
 	justify-content: space-between;
 	gap: 20px;
@@ -70,13 +70,21 @@ body {
 	white-space: nowrap;
 }
 
-#brand {
+.header {
+	display: flex;
+}
+
+.settingsheader {
+	display: none;
+}
+
+.brand {
 	display: flex;
 	justify-content: space-between;
 	gap: 19px;
 }
 
-#logoImg {
+.logoImg {
 	object-fit: auto;
 	object-position: center;
 	width: 66px;
@@ -90,7 +98,7 @@ body {
 	-webkit-user-drag: none;
 }
 
-#name {
+.name {
 	font-family: Segoe UI, sans-serif;
 	flex-grow: 1;
 	margin: auto 0;
@@ -140,7 +148,7 @@ body {
 
 #launchButton {
 	position: relative;
-	border-radius: 16px; 
+	border-radius: 16px;
 	background: linear-gradient(50deg, #10a9a8 0%, #5f65b9 100%);
 	box-shadow: 0px 0px 27px 0px #3788b1, 0px 4px 7px 0px rgba(0, 0, 0, 0.25);
 	display: flex;
@@ -150,7 +158,7 @@ body {
 	width: 250px;
 	height: 86px;
 	cursor: pointer;
-	transition: filter 0.15s ease-out, scale 0.22s cubic-bezier(.09,.63,.55,1);
+	transition: filter 0.15s ease-out, scale 0.22s cubic-bezier(.09, .63, .55, 1);
 }
 
 #launchButton:hover {
@@ -403,4 +411,86 @@ p {
 
 #settings:active {
 	filter: brightness(0.6);
+}
+
+/* ------------------------ Settings Page Styling ------------------------ */
+
+.centersettings {
+	display: none;
+	justify-content: center;
+	flex-direction: column;
+	width: 650px;
+	gap: 35px;
+	position: relative;
+	height: 100%;
+}
+
+.centersettings h2 {
+	color: #ffffff;
+	font-weight: 600;
+	font-size: 27px;
+	margin: 0;
+}
+
+.settingsection {
+	display: flex;
+	gap: 7px;
+	flex-direction: column;
+	text-shadow: 0 4px 7px #000000;
+}
+
+.settingoption {
+	width: 100%;
+	display: flex;
+	justify-content: space-between;
+}
+
+.settingoption p {
+	font-size: 22px;
+	text-shadow: 0 4px 7px #000000;
+	margin: 0;
+	font-weight: 300;
+}
+
+
+input[type=checkbox] {
+    margin-right: 7px;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 24px;
+    width: 24px;
+    background-color: #8383832E;
+	outline: solid 3px #83838314;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+	box-shadow: 0 4px 7px #000000;
+}
+
+input[type=checkbox]:hover {
+    background-color: #ffffff21;
+}
+
+input[type=checkbox]::after {
+    content: "";
+    position: absolute;
+    background-image: url(../img/tick.svg);
+	opacity: 0.6;
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 18px;
+    height: 18px;
+    display: none;
+}
+
+#txtshdw, #hdfnt {
+    display: none;
+}
+
+input[type=checkbox]:checked::after {
+    display: block;
 }
