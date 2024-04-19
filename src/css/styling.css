@@ -191,9 +191,9 @@ body {
 }
 
 #launchSubtext {
-	color: #f0f0f0;
+	color: #f0f0f0a8;
 	align-self: center;
-	font: 350 14px "Segoe UI", sans-serif;
+	font: 400 14px "Segoe UI", sans-serif;
 
 	-webkit-user-select: none;
 	/* Safari */
@@ -417,12 +417,13 @@ p {
 
 .centersettings {
 	display: none;
-	justify-content: center;
+	justify-content: start;
 	flex-direction: column;
 	width: 650px;
 	gap: 35px;
 	position: relative;
 	height: 100%;
+	margin-top: 35px;
 }
 
 .centersettings h2 {
