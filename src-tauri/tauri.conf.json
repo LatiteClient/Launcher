@@ -59,8 +59,8 @@
         "fullscreen": false,
         "resizable": false,
         "title": "Latite Client",
-        "width": 762,
-        "height": 558,
+        "width": 656,
+        "height": 458,
         "decorations": false,
         "transparent": true
       }
