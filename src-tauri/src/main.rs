@@ -9,6 +9,8 @@ use windows::Win32::System::Memory::{
     VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE,
 };
 
+use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK};
+
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 
 use windows::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
@@ -112,6 +114,16 @@ async fn inject() {
     if !std::fs::exists(DLL_PATH).unwrap() {
         download_file().await;
     }
+
+    let res = std::process::Command::new("minecraft:")
+        .spawn();
+
+    if !res.is_ok() {
+        unsafe { MessageBoxA(None, s!("Minecraft does not seem to be installed!"), s!("Latite Client"), MB_OK) };
+        return;
+    }
+
+    res.unwrap().wait().unwrap();
 
 
     let pid = unsafe { get_pid("Minecraft.Windows.exe") };
