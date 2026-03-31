@@ -5,7 +5,6 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<link rel="stylesheet" href="./css/styling.css" />
-	<script src="./main.js" type="module"></script>
 	<title>Latite V2 Injector</title>
 </head>
 
@@ -31,7 +30,7 @@
 
 		<div class="center hide" data-tauri-drag-region>
 			<div id="launchButton">
-				<div id="centerLaunch">
+				<div id="centerLaunch" onclick="test();">
 					<div id="launchText">LAUNCH</div>
 					<div id="launchSubtext">Status: Idle</div>
 				</div>
@@ -103,6 +102,7 @@
 	</div>
 </body>
 
+	<script src="./main.js" type="module"></script>
 <script>
 
 	function hide() {
