@@ -1,6 +1,6 @@
-# Tauri + Vanilla TS
+# Latite Launcher
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
+The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclient/Latite).
 
 ## Recommended IDE Setup
 
