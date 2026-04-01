@@ -7,7 +7,7 @@ struct Options {
     rpc_show_mc_version: bool,
     rpc_show_time_played: bool,
 
-    misc_hide_system_tray: bool,
+    misc_hide_on_close: bool,
     misc_close_after_injected: bool,
 }
 
@@ -17,7 +17,7 @@ static mut OPTIONS: Options = Options {
     rpc_show_mc_version: true,
     rpc_show_time_played: true,
 
-    misc_hide_system_tray: false,
+    misc_hide_on_close: false,
     misc_close_after_injected: false,
 };
 
@@ -41,4 +41,37 @@ pub fn load_options() {
     let opts : Options = serde_json::from_reader(options_file).unwrap();
 
     unsafe { OPTIONS = opts; }
+}
+
+pub fn update_bool_option(id: &str, value: bool) {
+    unsafe {
+        match id {
+            "rpc_enabled" => OPTIONS.rpc_enabled = value,
+            "rpc_show_server" => OPTIONS.rpc_show_server = value,
+            "rpc_show_mc_version" => OPTIONS.rpc_show_mc_version = value,
+            "rpc_show_time_played" => OPTIONS.rpc_show_time_played = value,
+            "misc_hide_on_close" => OPTIONS.misc_hide_on_close = value,
+            "misc_close_after_injected" => OPTIONS.misc_close_after_injected = value,
+            _ => println!("Unknown option: {}", id),
+        }
+    }
+
+    save_options();
+}
+
+pub fn get_bool_option(id: &str) -> bool {
+    unsafe {
+        match id {
+            "rpc_enabled" => OPTIONS.rpc_enabled,
+            "rpc_show_server" => OPTIONS.rpc_show_server,
+            "rpc_show_mc_version" => OPTIONS.rpc_show_mc_version,
+            "rpc_show_time_played" => OPTIONS.rpc_show_time_played,
+            "misc_hide_on_close" => OPTIONS.misc_hide_on_close,
+            "misc_close_after_injected" => OPTIONS.misc_close_after_injected,
+            _ => {
+                println!("Unknown option: {}", id);
+                false
+            },
+        }
+    }
 }

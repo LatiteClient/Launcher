@@ -8,7 +8,7 @@ mod inject;
 mod options;
 mod paths;
 use crate::inject::{inject_dll, get_pid};
-use crate::options::{load_options, save_options};
+use crate::options::{get_bool_option, load_options, save_options, update_bool_option};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -67,14 +67,23 @@ async fn inject() {
     unsafe { inject_dll(pid.unwrap(), dll_path.to_str().unwrap()); }
 }
 
+#[tauri::command]
+fn update_option(id: &str, value: bool) {
+    update_bool_option(id, value);
+}
+
+#[tauri::command]
+fn get_option(id: &str) -> bool {
+   get_bool_option(id)
+}
+
 fn main() {
     load_options();
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, inject])
+        .invoke_handler(tauri::generate_handler![greet, inject, update_option, get_option])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
     println!("Saving options");
     save_options();
 }
-    
