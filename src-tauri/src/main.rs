@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK};
@@ -13,12 +14,7 @@ use crate::inject::{inject_dll, get_pid};
 use crate::options::{get_bool_option, load_options, save_options, update_bool_option};
 
 const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+static mut IS_INJECTING: AtomicBool = AtomicBool::new(false);
 
 fn get_dll_path() -> std::path::PathBuf {
     paths::get_dlls_path().join("Latite.dll")
@@ -39,6 +35,14 @@ async fn download_file() {
 
 #[tauri::command]
 async fn inject() {
+    unsafe {
+        if (IS_INJECTING.load(Ordering::SeqCst)) {
+            return;
+        }
+        
+        IS_INJECTING.store(true, Ordering::SeqCst)
+    };
+
     println!("Injecting...");
 
     let dll_path = get_dll_path();
@@ -53,6 +57,7 @@ async fn inject() {
 
     if !res.is_ok() {
         unsafe { MessageBoxA(None, s!("Minecraft does not seem to be installed!"), s!("Latite Client"), MB_OK) };
+        unsafe { IS_INJECTING.store(false, Ordering::SeqCst) };
         return;
     }
 
@@ -73,6 +78,7 @@ async fn inject() {
 
         if pid.is_none() {
             unsafe { MessageBoxA(None, s!("Minecraft process not found, please try again"), s!("Latite Client"), MB_OK) };
+            unsafe { IS_INJECTING.store(false, Ordering::SeqCst) };
             return;
         }
     } else {
@@ -81,6 +87,7 @@ async fn inject() {
 
 
     unsafe { inject_dll(pid.unwrap(), dll_path.to_str().unwrap()); }
+    unsafe { IS_INJECTING.store(false, Ordering::SeqCst) };
 }
 
 #[tauri::command]
@@ -96,7 +103,7 @@ fn get_option(id: &str) -> bool {
 fn main() {
     load_options();
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, inject, update_option, get_option])
+        .invoke_handler(tauri::generate_handler![inject, update_option, get_option])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
