@@ -1,6 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::time::Instant;
+
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK};
 use windows::core::s;
 
@@ -9,6 +11,8 @@ mod options;
 mod paths;
 use crate::inject::{inject_dll, get_pid};
 use crate::options::{get_bool_option, load_options, save_options, update_bool_option};
+
+const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -43,7 +47,8 @@ async fn inject() {
         download_file().await;
     }
 
-    let res = std::process::Command::new("minecraft:")
+    let res = std::process::Command::new("explorer")
+        .arg("minecraft:")
         .spawn();
 
     if !res.is_ok() {
@@ -54,11 +59,22 @@ async fn inject() {
     res.unwrap().wait().unwrap();
 
 
-    let pid = unsafe { get_pid("Minecraft.Windows.exe") };
+    let mut pid = unsafe { get_pid(MC_PROCESS_NAME) };
 
     if pid.is_none() {
-        println!("Minecraft process not found!");
-        return;
+        for i in 0..100 {
+            println!("Minecraft process not found, retrying... ({}/100)", i + 1);
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            pid = unsafe { get_pid(MC_PROCESS_NAME) };
+            if pid.is_some() {
+                break;
+            }
+        }
+
+        if pid.is_none() {
+            unsafe { MessageBoxA(None, s!("Minecraft process not found, please try again"), s!("Latite Client"), MB_OK) };
+            return;
+        }
     } else {
         println!("Minecraft process found with PID: {}", pid.unwrap());
     }

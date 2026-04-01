@@ -73,7 +73,9 @@ pub unsafe fn get_pid(process_name: &str) -> Option<u32> {
                 exe_file.push(entry.szExeFile[i] as u8 as char);
             }
 
-            if exe_file == process_name {
+            // check if process name matches and thread count is greater than 1 (to avoid picking up the Minecraft Launcher process)
+            if exe_file == process_name && entry.cntThreads > 1 {
+                println!("found process, thread count {}", entry.cntThreads);
                 return Some(entry.th32ProcessID);
             }
             if !Process32Next(snapshot, &mut entry).is_ok() {
