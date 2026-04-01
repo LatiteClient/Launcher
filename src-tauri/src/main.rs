@@ -4,7 +4,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
-use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK};
+use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK, MB_ICONERROR};
 use windows::core::s;
 
 mod inject;
@@ -39,7 +39,7 @@ async fn inject() {
         if (IS_INJECTING.load(Ordering::SeqCst)) {
             return;
         }
-        
+
         IS_INJECTING.store(true, Ordering::SeqCst)
     };
 
@@ -56,7 +56,7 @@ async fn inject() {
         .spawn();
 
     if !res.is_ok() {
-        unsafe { MessageBoxA(None, s!("Minecraft does not seem to be installed!"), s!("Latite Client"), MB_OK) };
+        unsafe { MessageBoxA(None, s!("Minecraft does not seem to be installed!"), s!("Latite Client"), MB_ICONERROR | MB_OK) };
         unsafe { IS_INJECTING.store(false, Ordering::SeqCst) };
         return;
     }
@@ -77,7 +77,7 @@ async fn inject() {
         }
 
         if pid.is_none() {
-            unsafe { MessageBoxA(None, s!("Minecraft process not found, please try again"), s!("Latite Client"), MB_OK) };
+            unsafe { MessageBoxA(None, s!("Minecraft process not found, please try again"), s!("Latite Client"), MB_ICONERROR | MB_OK) };
             unsafe { IS_INJECTING.store(false, Ordering::SeqCst) };
             return;
         }
