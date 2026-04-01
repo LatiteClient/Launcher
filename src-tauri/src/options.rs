@@ -9,6 +9,7 @@ struct Options {
 
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
+    last_used_version: Option<String>,
 }
 
 static mut OPTIONS: Options = Options {
@@ -19,6 +20,7 @@ static mut OPTIONS: Options = Options {
 
     misc_hide_on_close: false,
     misc_close_after_injected: false,
+    last_used_version: None,
 };
 
 pub fn save_options() {
@@ -41,6 +43,15 @@ pub fn load_options() {
     let opts : Options = serde_json::from_reader(options_file).unwrap();
 
     unsafe { OPTIONS = opts; }
+}
+
+pub fn update_last_used_version(version: &str) {
+    unsafe { OPTIONS.last_used_version = Some(version.to_string()); }
+    save_options();
+}
+
+pub fn get_last_used_version() -> Option<String> {
+    unsafe { OPTIONS.last_used_version.clone() }
 }
 
 pub fn update_bool_option(id: &str, value: bool) {
