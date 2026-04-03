@@ -3,6 +3,7 @@ use std::ffi::CString;
 use windows::core::PCSTR;
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_ICONERROR, MB_OK};
 
+// TODO: implement actual tauri dialog instead of ghetto ass win32 messagebox
 pub fn show_error(title: &str, message: &str) {
     let title = sanitize_text(title);
     let message = sanitize_text(message);

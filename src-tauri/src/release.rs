@@ -3,6 +3,7 @@ use std::path::Path;
 use reqwest::header::USER_AGENT;
 use serde::Deserialize;
 
+// TODO: Move to main Latite repo instead of using Latite-Releases
 const RELEASE_API_URL: &str =
     "https://api.github.com/repos/Imrglop/Latite-Releases/releases/latest";
 const DLL_DOWNLOAD_URL: &str =
