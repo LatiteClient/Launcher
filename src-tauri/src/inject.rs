@@ -12,7 +12,7 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 use windows::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
 use windows::Win32::System::Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE};
 use windows::Win32::System::Threading::{
-    CreateRemoteThread, OpenProcess, WaitForSingleObject, INFINITE, PROCESS_CREATE_THREAD,
+    CreateRemoteThread, GetExitCodeThread, OpenProcess, WaitForSingleObject, INFINITE, PROCESS_CREATE_THREAD,
     PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
 };
 
@@ -89,7 +89,16 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
 
     WaitForSingleObject(remote_thread.raw(), INFINITE);
 
-    println!("Injected {} into process {pid}.", full_dll_path.display());
+    // Check if the LoadLibraryW call succeeded
+    let mut thread_exit_code: u32 = 0;
+    GetExitCodeThread(remote_thread.raw(), &mut thread_exit_code)
+        .map_err(|error| format!("Failed to get thread exit code: {error}"))?;
+
+    if thread_exit_code == 0 {
+        return Err("LoadLibraryW failed: DLL could not be loaded (exit code was 0).".to_string());
+    }
+
+    println!("Injected {} into process {pid}. LoadLibraryW returned: {:#x}", full_dll_path.display(), thread_exit_code);
     Ok(())
 }
 

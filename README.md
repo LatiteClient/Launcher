@@ -11,6 +11,7 @@ The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclien
 - [ ] Discord RPC
 - [ ] Minimize to tray
 - [x] Close after injected
+- [x] Status Text
 
 ## Recommended IDE Setup
 

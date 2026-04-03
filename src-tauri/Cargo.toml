@@ -1,7 +1,7 @@
 [package]
-name = "tauri-app"
+name = "latite-launcher"
 version = "0.0.0"
-description = "A Tauri App"
+description = "Latite Client Launcher"
 authors = ["you"]
 edition = "2021"
 

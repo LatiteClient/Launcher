@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api";
 import { open } from "@tauri-apps/api/dialog";
+import { listen } from "@tauri-apps/api/event";
 
 const launchButton = document.getElementById("launchButton");
 
@@ -37,6 +38,10 @@ function inject(request) {
     console.error("Inject failed:", error);
   });
 }
+
+listen("inject_status", (event) => {
+  document.getElementById("launchSubtext").textContent = "Status: " + event.payload;
+});
 
 let items = document.getElementsByClassName("options_input");
 

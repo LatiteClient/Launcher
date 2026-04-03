@@ -28,12 +28,17 @@ async fn inject(
         }
     };
 
-    let result = launcher::inject(state.inner(), request).await;
+    let result = launcher::inject(state.inner(), request, &app_handle).await;
 
     if let Err(error) = &result {
-        dialogs::show_error("Latite Client", error);
+        // Only show dialog if it hasn't already been shown by launcher
+        if !error.contains("[DIALOG_SHOWN]") {
+            dialogs::show_error("Latite Client", error);
+        }
     } else if close_after_injected {
         app_handle.exit(0);
+    } else {
+        // Idle already emitted in launcher
     }
 
     result
