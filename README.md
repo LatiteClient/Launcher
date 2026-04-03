@@ -3,13 +3,14 @@
 The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclient/Latite).
 
 # TODO
-- [X] Offline Latite injection
+
+- [x] Offline Latite injection
 - [ ] Notifications for new injector updates
 - [ ] Translations
-- [ ] Custom DLL
+- [x] Custom DLL
 - [ ] Discord RPC
 - [ ] Minimize to tray
-- [ ] Close after injected
+- [x] Close after injected
 
 ## Recommended IDE Setup
 
