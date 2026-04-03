@@ -1,17 +1,18 @@
-use std::{path::Path, process::Command, thread, time::Duration};
+use std::{path::PathBuf, process::Command, thread, time::Duration};
 
-use crate::{app_state::AppState, inject as injector, paths, release};
+use crate::{
+    app_state::AppState, inject as injector, launch_request::InjectRequest, paths, release,
+};
 
 const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 
-pub async fn inject(state: &AppState) -> Result<(), String> {
+pub async fn inject(state: &AppState, request: InjectRequest) -> Result<(), String> {
     let _guard = state.try_begin_injection()?;
     println!("Injecting...");
 
-    let dll_path = paths::get_dll_path()?;
-    prepare_dll(state, &dll_path).await?;
+    let dll_path = resolve_dll_path(state, request).await?;
 
     let pid = if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME)? {
         println!("Minecraft process found with PID: {pid}");
@@ -24,7 +25,15 @@ pub async fn inject(state: &AppState) -> Result<(), String> {
     injector::inject_dll(pid, &dll_path)
 }
 
-async fn prepare_dll(state: &AppState, dll_path: &Path) -> Result<(), String> {
+async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
+    match request.dll_path {
+        Some(dll_path) => validate_custom_dll_path(dll_path),
+        None => prepare_latite_dll(state).await,
+    }
+}
+
+async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
+    let dll_path = paths::get_dll_path()?;
     let previous_version = state.get_last_used_version()?;
     let latest_version = match release::fetch_latest_release_name().await {
         Ok(version) => {
@@ -44,7 +53,7 @@ async fn prepare_dll(state: &AppState, dll_path: &Path) -> Result<(), String> {
     let needs_download = dll_missing || has_newer_release;
 
     if needs_download {
-        release::download_latest_dll(dll_path).await?;
+        release::download_latest_dll(&dll_path).await?;
 
         if let Some(version) = latest_version {
             state.set_last_used_version(Some(version))?;
@@ -55,7 +64,40 @@ async fn prepare_dll(state: &AppState, dll_path: &Path) -> Result<(), String> {
         return Err("Latite.dll is missing and could not be downloaded.".to_string());
     }
 
-    Ok(())
+    Ok(dll_path)
+}
+
+fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
+    let dll_path = PathBuf::from(dll_path);
+
+    if !dll_path.exists() {
+        return Err(format!(
+            "The selected DLL does not exist: {}",
+            dll_path.display()
+        ));
+    }
+
+    if !dll_path.is_file() {
+        return Err(format!(
+            "The selected path is not a file: {}",
+            dll_path.display()
+        ));
+    }
+
+    let is_dll = dll_path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("dll"));
+
+    if !is_dll {
+        return Err(format!(
+            "The selected file is not a DLL: {}",
+            dll_path.display()
+        ));
+    }
+
+    std::fs::canonicalize(&dll_path)
+        .map_err(|error| format!("Failed to resolve DLL path {}: {error}", dll_path.display()))
 }
 
 fn launch_minecraft() -> Result<(), String> {

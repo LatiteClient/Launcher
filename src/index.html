@@ -1,44 +1,55 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./css/styling.css" />
+    <title>Latite V2 Injector</title>
+  </head>
 
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<link rel="stylesheet" href="./css/styling.css" />
-	<title>Latite V2 Injector</title>
-</head>
+  <body class="preventSelect">
+    <div class="launcher">
+      <img loading="lazy" src="./img/background.png" class="background" />
 
-<body class="preventSelect">
-	<div class="launcher">
-		<img loading="lazy" src="./img/background.png" class="background" />
+      <div class="header" data-tauri-drag-region>
+        <div class="brand">
+          <img loading="lazy" src="./img/latite.png" class="logoImg" />
+          <div class="name">Latite Client</div>
+        </div>
+        <img
+          loading="lazy"
+          src="./img/close.svg"
+          class="close"
+          onclick="
+            closeWindowAnimation();
+            closeWindowTimeout();
+          "
+        />
+      </div>
+      <div class="settingsheader" data-tauri-drag-region>
+        <div class="brand">
+          <img loading="lazy" src="./img/latite.png" class="logoImg" />
+          <div class="name">Settings</div>
+        </div>
+        <img
+          loading="lazy"
+          src="./img/arrowback.svg"
+          class="close"
+          onclick="returnToHome()"
+        />
+      </div>
 
-		<div class="header" data-tauri-drag-region>
-			<div class="brand">
-				<img loading="lazy" src="./img/latite.png" class="logoImg" />
-				<div class="name">Latite Client</div>
-			</div>
-			<img loading="lazy" src="./img/close.svg" class="close"
-				onclick="closeWindowAnimation(); closeWindowTimeout();" />
-		</div>
-		<div class="settingsheader" data-tauri-drag-region>
-			<div class="brand">
-				<img loading="lazy" src="./img/latite.png" class="logoImg" />
-				<div class="name">Settings</div>
-			</div>
-			<img loading="lazy" src="./img/arrowback.svg" class="close" onclick="returnToHome()" />
-		</div>
-
-		<div class="center hide" data-tauri-drag-region>
-			<div id="launchButton">
-				<div id="centerLaunch" onclick="test();">
-					<div id="launchText">LAUNCH</div>
-					<div id="launchSubtext">Status: Idle</div>
-				</div>
-			</div>
-			<p class="preventSelect">
-				Right click the launch button to inject custom DLLs
-			</p>
-			<!--
+      <div class="center hide" data-tauri-drag-region>
+        <div id="launchButton">
+          <div id="centerLaunch">
+            <div id="launchText">LAUNCH</div>
+            <div id="launchSubtext">Status: Idle</div>
+          </div>
+        </div>
+        <p class="preventSelect">
+          Right click the launch button to inject custom DLLs
+        </p>
+        <!--
           <div id="selectMenu">
             <div id="selectButton">
               <span id="selectVersion">Select a version</span>
@@ -57,95 +68,117 @@
             </ul>
           </div>
         -->
-		</div>
-		<div class="centersettings" data-tauri-drag-region>
-			<div class="settingsection">
-				<h2>Discord RPC</h2>
-				<div class="settingoption">
-					<p>Discord Rich Presence</p>
-					<input class="options_input" type="checkbox" id="rpc_enabled">
-				</div>
-				<div class="settingoption">
-					<p>Show server in RPC</p>
-					<input class="options_input" type="checkbox" id="rpc_show_server">
-				</div>
-				<div class="settingoption">
-					<p>Show Minecraft Version in RPC</p>
-					<input class="options_input" type="checkbox" id="rpc_show_mc_version">
-				</div>
-				<div class="settingoption">
-					<p>Show time played in RPC</p>
-					<input class="options_input" type="checkbox" id="rpc_show_time_played">
-				</div>
-			</div>
-			<div class="settingsection">
-				<h2>Miscellaneous</h2>
-				<div class="settingoption">
-					<p>Hide to system tray on close</p>
-					<input class="options_input" type="checkbox" id="misc_hide_on_close">
-				</div>
-				<div class="settingoption">
-					<p>Close after Injected</p>
-					<input class="options_input" type="checkbox" id="misc_close_after_injected">
-				</div>
-			</div>
-		</div>
-		<div id="misc" class="hide">
-			<img loading="lazy" src="./img/discord.svg" id="discord"
-				onclick="window.open('https://discord.com/invite/latite');" />
-			<div id="infobar">
-				<div class="info">Changelog</div>
-				<div class="info">Credits</div>
-				<img loading="lazy" src="img/settings.svg" id="settings" onclick="hide();" />
-			</div>
-		</div>
-	</div>
-</body>
+      </div>
+      <div class="centersettings" data-tauri-drag-region>
+        <div class="settingsection">
+          <h2>Discord RPC</h2>
+          <div class="settingoption">
+            <p>Discord Rich Presence</p>
+            <input class="options_input" type="checkbox" id="rpc_enabled" />
+          </div>
+          <div class="settingoption">
+            <p>Show server in RPC</p>
+            <input class="options_input" type="checkbox" id="rpc_show_server" />
+          </div>
+          <div class="settingoption">
+            <p>Show Minecraft Version in RPC</p>
+            <input
+              class="options_input"
+              type="checkbox"
+              id="rpc_show_mc_version"
+            />
+          </div>
+          <div class="settingoption">
+            <p>Show time played in RPC</p>
+            <input
+              class="options_input"
+              type="checkbox"
+              id="rpc_show_time_played"
+            />
+          </div>
+        </div>
+        <div class="settingsection">
+          <h2>Miscellaneous</h2>
+          <div class="settingoption">
+            <p>Hide to system tray on close</p>
+            <input
+              class="options_input"
+              type="checkbox"
+              id="misc_hide_on_close"
+            />
+          </div>
+          <div class="settingoption">
+            <p>Close after Injected</p>
+            <input
+              class="options_input"
+              type="checkbox"
+              id="misc_close_after_injected"
+            />
+          </div>
+        </div>
+      </div>
+      <div id="misc" class="hide">
+        <img
+          loading="lazy"
+          src="./img/discord.svg"
+          id="discord"
+          onclick="window.open('https://discord.com/invite/latite')"
+        />
+        <div id="infobar">
+          <div class="info">Changelog</div>
+          <div class="info">Credits</div>
+          <img
+            loading="lazy"
+            src="img/settings.svg"
+            id="settings"
+            onclick="hide()"
+          />
+        </div>
+      </div>
+    </div>
+  </body>
 
-	<script src="./main.js" type="module"></script>
-<script>
+  <script src="./main.js" type="module"></script>
+  <script>
+    function hide() {
+      var hide = document.querySelectorAll(".hide");
+      var settingsPage = document.querySelector(".centersettings");
+      var settingsHeader = document.querySelector(".settingsheader");
+      var header = document.querySelector(".header");
 
-	function hide() {
-		var hide = document.querySelectorAll(".hide");
-		var settingsPage = document.querySelector(".centersettings");
-		var settingsHeader = document.querySelector(".settingsheader");
-		var header = document.querySelector(".header");
+      hide.forEach((hide) => (hide.style.display = "none"));
+      settingsPage.style.display = "flex";
+      settingsHeader.style.display = "flex";
+      header.style.display = "none";
+    }
 
-		hide.forEach((hide) => hide.style.display = "none");
-		settingsPage.style.display = "flex";
-		settingsHeader.style.display = "flex";
-		header.style.display = "none";
-	}
+    function returnToHome() {
+      var hide = document.querySelectorAll(".hide");
+      var settingsPage = document.querySelector(".centersettings");
+      var settingsHeader = document.querySelector(".settingsheader");
+      var header = document.querySelector(".header");
 
-	function returnToHome() {
-		var hide = document.querySelectorAll(".hide");
-		var settingsPage = document.querySelector(".centersettings");
-		var settingsHeader = document.querySelector(".settingsheader");
-		var header = document.querySelector(".header");
+      hide.forEach((hide) => (hide.style.display = "flex"));
+      settingsPage.style.display = "none";
+      settingsHeader.style.display = "none";
+      header.style.display = "flex";
+    }
 
-		hide.forEach((hide) => hide.style.display = "flex");
-		settingsPage.style.display = "none";
-		settingsHeader.style.display = "none";
-		header.style.display = "flex";
-	}
+    function closeWindowAnimation() {
+      var launcher = document.querySelector(".launcher");
+      launcher.classList.toggle("launcherCloseAnimation");
+    }
 
-	function closeWindowAnimation() {
-		var launcher = document.querySelector(".launcher");
-		launcher.classList.toggle("launcherCloseAnimation");
-	}
+    let timeout;
 
-	let timeout;
+    function closeWindowTimeout() {
+      timeout = setTimeout(closeWindow, 300);
+    }
 
-	function closeWindowTimeout() {
-		timeout = setTimeout(closeWindow, 300);
-	}
+    function closeWindow() {
+      window.close();
+    }
 
-	function closeWindow() {
-		window.close();
-	}
-
-	document.addEventListener("contextmenu", (event) => event.preventDefault());
-
-</script>
-
+    document.addEventListener("contextmenu", (event) => event.preventDefault());
+  </script>
 </html>

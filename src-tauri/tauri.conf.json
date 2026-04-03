@@ -17,6 +17,10 @@
         "all": false,
         "open": true
       },
+      "dialog": {
+        "all": false,
+        "open": true
+      },
       "window": {
         "all": false,
         "center": false,

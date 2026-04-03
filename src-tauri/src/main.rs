@@ -4,17 +4,19 @@
 mod app_state;
 mod dialogs;
 mod inject;
+mod launch_request;
 mod launcher;
 mod options;
 mod paths;
 mod release;
 
 use app_state::AppState;
+use launch_request::InjectRequest;
 use tauri::State;
 
 #[tauri::command]
-async fn inject(state: State<'_, AppState>) -> Result<(), String> {
-    let result = launcher::inject(state.inner()).await;
+async fn inject(request: InjectRequest, state: State<'_, AppState>) -> Result<(), String> {
+    let result = launcher::inject(state.inner(), request).await;
 
     if let Err(error) = &result {
         dialogs::show_error("Latite Client", error);

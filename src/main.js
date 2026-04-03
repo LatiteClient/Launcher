@@ -1,10 +1,42 @@
 import { invoke } from "@tauri-apps/api";
+import { open } from "@tauri-apps/api/dialog";
 
-document.getElementById("launchButton").addEventListener("click", () => {
-  invoke("inject").catch((error) => {
+const launchButton = document.getElementById("launchButton");
+
+launchButton.addEventListener("click", () => {
+  inject({});
+});
+
+launchButton.addEventListener("contextmenu", async (event) => {
+  event.preventDefault();
+
+  const selected = await open({
+    title: "Select a DLL to inject",
+    multiple: false,
+    filters: [
+      {
+        name: "DLL File",
+        extensions: ["dll"],
+      },
+    ],
+  });
+
+  if (selected === null) {
+    return;
+  }
+
+  const dllPath = Array.isArray(selected) ? selected[0] : selected;
+
+  if (dllPath) {
+    inject({ dllPath });
+  }
+});
+
+function inject(request) {
+  invoke("inject", { request }).catch((error) => {
     console.error("Inject failed:", error);
   });
-});
+}
 
 let items = document.getElementsByClassName("options_input");
 
