@@ -82,6 +82,25 @@ fn main() {
     };
 
     tauri::Builder::default()
+    .setup(|app| {
+        if let Some(app_version) = &app.config().package.version {
+            let app_version_copy = app_version.clone();
+            tauri::async_runtime::spawn(async move {
+                match launcher::check_for_updates(&app_version_copy).await {
+                    Ok(_) => {},
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
+                };
+            });
+        } else {
+            let message = "Failed to get app version from config!";
+            dialogs::show_error(&message);
+            eprintln!("{message}");
+        }
+
+        Ok(())
+    })
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             inject,

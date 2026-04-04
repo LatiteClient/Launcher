@@ -270,6 +270,23 @@ fn monitor_process_after_injection(
     Ok(ProcessMonitorOutcome::Running)
 }
 
+pub async fn check_for_updates(current_version: &str) -> Result<(), String> {
+    match release::fetch_latest_release_name(release::LAUNCHER_REPO).await {
+        Ok(latest_version) => {
+            println!("Latest launcher version: {latest_version}, Current launcher version: {current_version}");
+
+            if current_version != latest_version {
+                crate::dialogs::show_info(&format!(
+                    "A new version of the Latite Launcher is available! Latest version: {latest_version}"
+                ));
+            }
+
+            Ok(())
+        }
+        Err(error) => Err(format!("Failed to check for launcher updates: {error}")),
+    }
+}
+
 async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
     match request.dll_path {
         Some(dll_path) => validate_custom_dll_path(dll_path),
