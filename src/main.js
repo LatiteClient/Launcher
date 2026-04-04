@@ -45,21 +45,25 @@ let pendingStatusUpdate = null;
 
 function updateStatus(payload) {
   const newStatusText = "Status: " + payload;
-  
+
   if (statusUpdateInProgress) {
     // Queue the update for after current animation completes
     pendingStatusUpdate = payload;
     return;
   }
-  
+
   const statusContainer = document.getElementById("statusContainer");
-  const currentStatus = statusContainer.querySelector(".status-message, #launchSubtext");
-  
+  const currentStatus = statusContainer.querySelector(
+    ".status-message, #launchSubtext",
+  );
+
   // Extract base message (remove trailing dots for comparison)
-  const getBaseMessage = (text) => text.replace(/\.+$/, '');
-  const currentBaseMessage = currentStatus ? getBaseMessage(currentStatus.textContent) : '';
+  const getBaseMessage = (text) => text.replace(/\.+$/, "");
+  const currentBaseMessage = currentStatus
+    ? getBaseMessage(currentStatus.textContent)
+    : "";
   const newBaseMessage = getBaseMessage(newStatusText);
-  
+
   if (currentStatus && currentBaseMessage === newBaseMessage) {
     // Same message family (just dots changing), update text without animation
     currentStatus.textContent = newStatusText;
@@ -72,28 +76,28 @@ function updateStatus(payload) {
   } else {
     // Different message, animate transition
     statusUpdateInProgress = true;
-    
+
     // Remove any existing animation classes to reset state
     currentStatus.classList.remove("status-slide-enter", "status-slide-exit");
-    
+
     const newStatus = document.createElement("div");
     newStatus.className = "status-message status-slide-enter";
     newStatus.textContent = newStatusText;
-    
+
     // Trigger exit animation on current status
     requestAnimationFrame(() => {
       currentStatus.classList.add("status-slide-exit");
     });
-    
+
     // Wait for animation to complete, then swap elements
     setTimeout(() => {
       if (currentStatus.parentNode) {
         currentStatus.remove();
       }
       statusContainer.appendChild(newStatus);
-      
+
       statusUpdateInProgress = false;
-      
+
       // Process any queued update
       if (pendingStatusUpdate) {
         const queuedUpdate = pendingStatusUpdate;

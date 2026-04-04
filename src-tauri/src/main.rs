@@ -53,20 +53,20 @@ fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
 
 #[tauri::command]
 fn open_folder() -> Result<(), String> {
-    let local_appdata = std::env::var("LOCALAPPDATA")
-        .map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
-    
+    let local_appdata =
+        std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
+
     let folder_path = std::path::Path::new(&local_appdata).join("Latite");
-    
+
     // Create the folder if it doesn't exist
     let _ = std::fs::create_dir_all(&folder_path);
-    
+
     // Use explorer to open the folder
     std::process::Command::new("explorer")
         .arg(folder_path.to_string_lossy().to_string())
         .spawn()
         .map_err(|e| format!("Failed to open folder: {}", e))?;
-    
+
     Ok(())
 }
 
@@ -83,7 +83,12 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![inject, update_option, get_option, open_folder])
+        .invoke_handler(tauri::generate_handler![
+            inject,
+            update_option,
+            get_option,
+            open_folder
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

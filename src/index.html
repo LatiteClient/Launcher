@@ -1,42 +1,48 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./css/styling.css" />
+    <title>Latite V2 Injector</title>
+  </head>
 
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<link rel="stylesheet" href="./css/styling.css" />
-	<title>Latite V2 Injector</title>
-</head>
+  <body class="preventSelect">
+    <div class="launcher">
+      <img loading="lazy" src="./img/background.png" class="background" />
 
-<body class="preventSelect">
-	<div class="launcher">
-		<img loading="lazy" src="./img/background.png" class="background" />
+      <div class="page home">
+        <div class="header" data-tauri-drag-region>
+          <div class="brand">
+            <img loading="lazy" src="./img/latite.png" class="logoImg" />
+            <div class="name">Latite Client</div>
+          </div>
+          <img
+            loading="lazy"
+            src="./img/close.svg"
+            class="close"
+            onclick="
+              closeWindowAnimation();
+              closeWindowTimeout();
+            "
+          />
+        </div>
 
-		<div class="page home">
-			<div class="header" data-tauri-drag-region>
-				<div class="brand">
-					<img loading="lazy" src="./img/latite.png" class="logoImg" />
-					<div class="name">Latite Client</div>
-				</div>
-				<img loading="lazy" src="./img/close.svg" class="close"
-					onclick="closeWindowAnimation(); closeWindowTimeout();" />
-			</div>
+        <div class="center" data-tauri-drag-region>
+          <div id="launchButton">
+            <div id="centerLaunch">
+              <div id="launchText">LAUNCH</div>
+              <div id="statusContainer">
+                <div id="launchSubtext">Status: Idle</div>
+              </div>
+            </div>
+          </div>
 
-			<div class="center" data-tauri-drag-region>
-				<div id="launchButton">
-					<div id="centerLaunch">
-						<div id="launchText">LAUNCH</div>
-						<div id="statusContainer">
-							<div id="launchSubtext">Status: Idle</div>
-						</div>
-					</div>
-				</div>
+          <p class="preventSelect">
+            Right click the launch button to inject custom DLLs
+          </p>
 
-				<p class="preventSelect">
-					Right click the launch button to inject custom DLLs
-				</p>
-
-				<!-- <div id="selectMenu">
+          <!-- <div id="selectMenu">
 					<div id="selectButton">
 						<span id="selectVersion">Select a version</span>
 						<img id="downArrow" src="./img/down.svg" />
@@ -53,192 +59,232 @@
 						</li>
 					</ul>
 				</div> -->
+        </div>
 
-			</div>
+        <div id="misc">
+          <div id="infobar">
+            <div class="info" id="changelog">Changelog</div>
+            <div class="info" id="credits">Credits</div>
+            <div class="info" id="openFolder">Open Latite Folder</div>
+          </div>
 
-			<div id="misc">
-				<div id="infobar">
-					<div class="info" id="changelog">Changelog</div>
-					<div class="info" id="credits">Credits</div>
-					<div class="info" id="openFolder">Open Latite Folder</div>
-				</div>
+          <div id="iconbar">
+            <img loading="lazy" src="./img/github.svg" id="github" />
+            <img loading="lazy" src="./img/discord.svg" id="discord" />
+            <img
+              loading="lazy"
+              src="./img/settings.svg"
+              id="settings"
+              onclick="openSettings()"
+            />
+          </div>
+        </div>
+      </div>
 
-				<div id="iconbar">
-					<img loading="lazy" src="./img/github.svg" id="github" />
-					<img loading="lazy" src="./img/discord.svg" id="discord" />
-					<img loading="lazy" src="./img/settings.svg" id="settings" onclick="openSettings()" />
-				</div>
-			</div>
-		</div>
+      <div class="page settings">
+        <div class="settingsheader" data-tauri-drag-region>
+          <div class="brand">
+            <img loading="lazy" src="./img/latite.png" class="logoImg" />
+            <div class="name">Settings</div>
+          </div>
+          <img
+            loading="lazy"
+            src="./img/arrowback.svg"
+            class="close"
+            onclick="returnToHome()"
+          />
+        </div>
 
-		<div class="page settings">
-			<div class="settingsheader" data-tauri-drag-region>
-				<div class="brand">
-					<img loading="lazy" src="./img/latite.png" class="logoImg" />
-					<div class="name">Settings</div>
-				</div>
-				<img loading="lazy" src="./img/arrowback.svg" class="close" onclick="returnToHome()" />
-			</div>
+        <div class="centersettings">
+          <div class="settingsection">
+            <h2>Discord RPC</h2>
+            <div class="settingoption">
+              <p>Discord Rich Presence</p>
+              <input class="options_input" type="checkbox" id="rpc_enabled" />
+            </div>
+            <div class="settingoption">
+              <p>Show server in RPC</p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="rpc_show_server"
+              />
+            </div>
+            <div class="settingoption">
+              <p>Show Minecraft Version in RPC</p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="rpc_show_mc_version"
+              />
+            </div>
+            <div class="settingoption">
+              <p>Show time played in RPC</p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="rpc_show_time_played"
+              />
+            </div>
+          </div>
 
-			<div class="centersettings">
-				<div class="settingsection">
-					<h2>Discord RPC</h2>
-					<div class="settingoption">
-						<p>Discord Rich Presence</p>
-						<input class="options_input" type="checkbox" id="rpc_enabled" />
-					</div>
-					<div class="settingoption">
-						<p>Show server in RPC</p>
-						<input class="options_input" type="checkbox" id="rpc_show_server" />
-					</div>
-					<div class="settingoption">
-						<p>Show Minecraft Version in RPC</p>
-						<input class="options_input" type="checkbox" id="rpc_show_mc_version" />
-					</div>
-					<div class="settingoption">
-						<p>Show time played in RPC</p>
-						<input class="options_input" type="checkbox" id="rpc_show_time_played" />
-					</div>
-				</div>
+          <div class="settingsection">
+            <h2>Miscellaneous</h2>
+            <div class="settingoption">
+              <p>Hide to system tray on close</p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="misc_hide_on_close"
+              />
+            </div>
+            <div class="settingoption">
+              <p>Close after Injected</p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="misc_close_after_injected"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
-				<div class="settingsection">
-					<h2>Miscellaneous</h2>
-					<div class="settingoption">
-						<p>Hide to system tray on close</p>
-						<input class="options_input" type="checkbox" id="misc_hide_on_close" />
-					</div>
-					<div class="settingoption">
-						<p>Close after Injected</p>
-						<input class="options_input" type="checkbox" id="misc_close_after_injected" />
-					</div>
-				</div>
-			</div>
-		</div>
+      <!-- Credits Modal -->
+      <div id="creditsModal" class="modal hidden">
+        <div class="modalOverlay"></div>
+        <div class="modalContent">
+          <div class="modalHeader">
+            <h2>Credits</h2>
+            <img
+              src="./img/close.svg"
+              class="modalClose"
+              onclick="closeCreditsModal()"
+            />
+          </div>
+          <div class="modalBody">
+            <div class="one">
+              <p><strong>Developers</strong></p>
+              <ul>
+                <li><strong>JayRSky:</strong> Lead Client Dev</li>
+                <li><strong>Plextora:</strong> Client/Launcher Dev</li>
+                <li><strong>MarioSQ:</strong> Contributing Client Dev</li>
+                <li><strong>CreativeMC:</strong> Website/Launcher Dev</li>
+              </ul>
+            </div>
+            <br />
+            <div class="two">
+              <p><strong>Contributors</strong></p>
+              <p>
+                Special thanks to all contributors who have helped improve this
+                project.
+              </p>
+              <ul>
+                <li><strong>phase (phasephasephase)</strong></li>
+                <li><strong>soppy (soupier)</strong></li>
+                <li><strong>rice (rice.exe_)</strong></li>
+                <li><strong>vastrakai</strong></li>
+                <li><strong>Distant (d1s.tie_)</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-		<!-- Credits Modal -->
-		<div id="creditsModal" class="modal hidden">
-			<div class="modalOverlay"></div>
-			<div class="modalContent">
-				<div class="modalHeader">
-					<h2>Credits</h2>
-					<img src="./img/close.svg" class="modalClose" onclick="closeCreditsModal()" />
-				</div>
-				<div class="modalBody">
-					<div class="one">
-						<p><strong>Developers</strong></p>
-						<ul>
-							<li><strong>JayRSky:</strong> Lead Client Dev</li>
-							<li><strong>Plextora:</strong> Client/Launcher Dev</li>
-							<li><strong>MarioSQ:</strong> Contributing Client Dev</li>
-							<li><strong>CreativeMC:</strong> Website/Launcher Dev</li>
-						</ul>
-					</div>
-					<br />
-					<div class="two">
-						<p><strong>Contributors</strong></p>
-						<p>Special thanks to all contributors who have helped improve this project.</p>
-						<ul>
-							<li><strong>phase (phasephasephase)</strong></li>
-							<li><strong>soppy (soupier)</strong></li>
-							<li><strong>rice (rice.exe_)</strong></li>
-							<li><strong>vastrakai</strong></li>
-							<li><strong>Distant (d1s.tie_)</strong></li>
-						</ul>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+    <script src="./main.js" type="module"></script>
+    <script>
+      function openSettings() {
+        const homePage = document.querySelector(".page.home");
+        const settingsPage = document.querySelector(".page.settings");
 
-	<script src="./main.js" type="module"></script>
-	<script>
-		function openSettings() {
-			const homePage = document.querySelector(".page.home");
-			const settingsPage = document.querySelector(".page.settings");
+        // closeSelectMenu();
+        homePage.classList.add("hidden");
+        settingsPage.classList.add("active");
+      }
 
-			// closeSelectMenu();
-			homePage.classList.add("hidden");
-			settingsPage.classList.add("active");
-		}
+      function returnToHome() {
+        const homePage = document.querySelector(".page.home");
+        const settingsPage = document.querySelector(".page.settings");
 
-		function returnToHome() {
-			const homePage = document.querySelector(".page.home");
-			const settingsPage = document.querySelector(".page.settings");
+        // closeSelectMenu();
+        settingsPage.classList.remove("active");
+        homePage.classList.remove("hidden");
+      }
 
-			// closeSelectMenu();
-			settingsPage.classList.remove("active");
-			homePage.classList.remove("hidden");
-		}
+      function closeWindowAnimation() {
+        const launcher = document.querySelector(".launcher");
+        launcher.classList.add("launcherCloseAnimation");
+      }
 
-		function closeWindowAnimation() {
-			const launcher = document.querySelector(".launcher");
-			launcher.classList.add("launcherCloseAnimation");
-		}
+      let timeout;
 
-		let timeout;
+      function closeWindowTimeout() {
+        timeout = setTimeout(closeWindow, 300);
+      }
 
-		function closeWindowTimeout() {
-			timeout = setTimeout(closeWindow, 300);
-		}
+      function closeWindow() {
+        window.close();
+      }
 
-		function closeWindow() {
-			window.close();
-		}
+      // function toggleSelectMenu() {
+      // 	const selectMenu = document.querySelector("#selectMenu");
+      // 	selectMenu.classList.toggle("active");
+      // }
 
-		// function toggleSelectMenu() {
-		// 	const selectMenu = document.querySelector("#selectMenu");
-		// 	selectMenu.classList.toggle("active");
-		// }
+      // function closeSelectMenu() {
+      // 	const selectMenu = document.querySelector("#selectMenu");
+      // 	selectMenu.classList.remove("active");
+      // }
 
-		// function closeSelectMenu() {
-		// 	const selectMenu = document.querySelector("#selectMenu");
-		// 	selectMenu.classList.remove("active");
-		// }
+      // document.querySelector("#selectButton").addEventListener("click", (e) => {
+      // 	e.stopPropagation();
+      // 	toggleSelectMenu();
+      // });
 
-		// document.querySelector("#selectButton").addEventListener("click", (e) => {
-		// 	e.stopPropagation();
-		// 	toggleSelectMenu();
-		// });
+      // document.querySelectorAll("#selectMenu .option").forEach((option) => {
+      // 	option.addEventListener("click", () => {
+      // 		document.querySelector("#selectVersion").textContent =
+      // 			option.querySelector(".optionText").textContent;
+      // 		closeSelectMenu();
+      // 	});
+      // });
 
-		// document.querySelectorAll("#selectMenu .option").forEach((option) => {
-		// 	option.addEventListener("click", () => {
-		// 		document.querySelector("#selectVersion").textContent =
-		// 			option.querySelector(".optionText").textContent;
-		// 		closeSelectMenu();
-		// 	});
-		// });
+      // document.addEventListener("click", () => {
+      // 	closeSelectMenu();
+      // });
 
-		// document.addEventListener("click", () => {
-		// 	closeSelectMenu();
-		// });
+      /* Credits Modal Functions */
+      function openCreditsModal() {
+        const modal = document.getElementById("creditsModal");
+        modal.classList.remove("hidden");
+      }
 
+      function closeCreditsModal() {
+        const modal = document.getElementById("creditsModal");
+        modal.classList.add("hidden");
+      }
 
-		/* Credits Modal Functions */
-		function openCreditsModal() {
-			const modal = document.getElementById("creditsModal");
-			modal.classList.remove("hidden");
-		}
+      // Credits modal event listeners
+      document
+        .getElementById("credits")
+        .addEventListener("click", openCreditsModal);
 
-		function closeCreditsModal() {
-			const modal = document.getElementById("creditsModal");
-			modal.classList.add("hidden");
-		}
+      // Close modal when clicking on overlay
+      document
+        .querySelector(".modalOverlay")
+        .addEventListener("click", closeCreditsModal);
 
-		// Credits modal event listeners
-		document.getElementById("credits").addEventListener("click", openCreditsModal);
+      // Close modal on ESC key
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeCreditsModal();
+        }
+      });
 
-		// Close modal when clicking on overlay
-		document.querySelector(".modalOverlay").addEventListener("click", closeCreditsModal);
-
-		// Close modal on ESC key
-		document.addEventListener("keydown", (event) => {
-			if (event.key === "Escape") {
-				closeCreditsModal();
-			}
-		});
-
-		document.addEventListener("contextmenu", (event) => event.preventDefault());
-	</script>
-</body>
-
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault(),
+      );
+    </script>
+  </body>
 </html>
