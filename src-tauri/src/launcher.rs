@@ -1,5 +1,13 @@
-use std::{path::PathBuf, process::Command, thread, time::Duration};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::{
+    path::PathBuf,
+    process::Command,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::{Duration, Instant},
+};
 
 use crate::{
     app_state::AppState, inject as injector, launch_request::InjectRequest, paths, release,
@@ -7,164 +15,259 @@ use crate::{
 use tauri::{AppHandle, Manager};
 
 const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
+const STATUS_EVENT: &str = "inject_status";
+const STATUS_IDLE: &str = "Idle";
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
+const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
+const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
+const FAILURE_STATUS_TIME: Duration = Duration::from_secs(7);
+const LAUNCH_FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
+const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(20);
+const POST_INJECTION_MONITOR_INTERVAL: Duration = Duration::from_millis(500);
 
-pub async fn inject(state: &AppState, request: InjectRequest, app_handle: &AppHandle) -> Result<(), String> {
-    let _guard = state.try_begin_injection()?;
-    println!("Injecting...");
-
-    let dll_path = resolve_dll_path(state, request).await?;
-
-    let pid = if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME)? {
-        println!("Minecraft process found with PID: {pid}");
-        app_handle.emit_all("inject_status", "Injecting").unwrap();
-        pid
-    } else {
-        app_handle.emit_all("inject_status", "Opening Minecraft").unwrap();
-        match launch_minecraft() {
-            Ok(_) => {},
-            Err(err) => {
-                app_handle.emit_all("inject_status", "Cannot open Minecraft").unwrap();
-                // Give the user time to see the message before it could reset
-                thread::sleep(Duration::from_secs(3));
-                app_handle.emit_all("inject_status", "Idle").unwrap();
-                return Err(err);
-            }
-        }
-        // Start animated injecting status while waiting for process
-        match wait_for_process_with_animation(MC_PROCESS_NAME, app_handle) {
-            Ok(pid) => pid,
-            Err(err) => {
-                app_handle.emit_all("inject_status", "Minecraft not found").unwrap();
-                crate::dialogs::show_error("Latite Client", &err);
-                // Give the user time to see the message before resetting to idle
-                thread::sleep(Duration::from_secs(7));
-                app_handle.emit_all("inject_status", "Idle").unwrap();
-                return Err(format!("{} [DIALOG_SHOWN]", err));
-            }
-        }
-    };
-
-    // Start animation thread for continuous injecting animation
-    let should_animate = Arc::new(AtomicBool::new(true));
-    let should_animate_clone = should_animate.clone();
-    let app_handle_clone = app_handle.clone();
-    
-    let animation_start_time = std::time::Instant::now();
-    
-    let animation_thread = thread::spawn(move || {
-        let dots = ["", ".", "..", "..."];
-        let mut dot_index = 0;
-        
-        while should_animate_clone.load(Ordering::Relaxed) {
-            let status = format!("Injecting{}", dots[dot_index]);
-            app_handle_clone.emit_all("inject_status", &status).unwrap();
-            dot_index = (dot_index + 1) % dots.len();
-            
-            thread::sleep(Duration::from_millis(300));
-        }
-    });
-
-    let result = injector::inject_dll(pid, &dll_path);
-    if result.is_ok() {
-        // Ensure injecting animation displays for at least 5 seconds
-        let elapsed = animation_start_time.elapsed();
-        let min_duration = Duration::from_secs(5);
-        if elapsed < min_duration {
-            let remaining = min_duration - elapsed;
-            thread::sleep(remaining);
-        }
-        
-        // Stop injecting animation
-        should_animate.store(false, Ordering::Relaxed);
-        let _ = animation_thread.join();
-        
-        // Switch to finalizing status with its own animation
-        // Monitor the process to ensure it doesn't crash after injection
-        // Minecraft Bedrock can take several seconds to fully load
-        // If the DLL is incompatible, it will crash within this window
-        let crashed = monitor_process_after_injection(MC_PROCESS_NAME, app_handle);
-        
-        if crashed {
-            app_handle.emit_all("inject_status", "Failed to inject").unwrap();
-            crate::dialogs::show_error("Latite Client", "Minecraft process closed after DLL injection. The DLL may be incompatible with your Minecraft version.");
-            // Give the user time to see the message before resetting to idle
-            thread::sleep(Duration::from_secs(7));
-            app_handle.emit_all("inject_status", "Idle").unwrap();
-            return Err("Minecraft process closed after DLL injection. The DLL may be incompatible with your Minecraft version. [DIALOG_SHOWN]".to_string());
-        }
-        
-        app_handle.emit_all("inject_status", "Successfully injected").unwrap();
-        // Keep successful status visible for 7 seconds before returning to idle
-        thread::sleep(Duration::from_secs(7));
-        app_handle.emit_all("inject_status", "Idle").unwrap();
-    } else {
-        // Stop animation on injection error
-        should_animate.store(false, Ordering::Relaxed);
-        let _ = animation_thread.join();
-    }
-    result
+#[derive(Debug)]
+pub struct LaunchError {
+    message: String,
+    dialog_already_shown: bool,
 }
 
-fn monitor_process_after_injection(process_name: &str, app_handle: &AppHandle) -> bool {
-    // Monitor for up to 25 seconds to catch delayed crashes on older PCs
-    // Show animated "Finalizing" status during monitoring
-    
-    // Start animation thread for continuous finalizing animation
-    let should_animate = Arc::new(AtomicBool::new(true));
-    let should_animate_clone = should_animate.clone();
-    let app_handle_clone = app_handle.clone();
-    
-    let animation_thread = thread::spawn(move || {
-        let dots = ["", ".", "..", "..."];
-        let mut dot_index = 0;
-        
-        while should_animate_clone.load(Ordering::Relaxed) {
-            let status = format!("Finalizing{}", dots[dot_index]);
-            app_handle_clone.emit_all("inject_status", &status).unwrap();
-            dot_index = (dot_index + 1) % dots.len();
-            
-            thread::sleep(Duration::from_millis(300));
+impl LaunchError {
+    fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            dialog_already_shown: false,
         }
-    });
-    
-    // Monitor the process
-    const MONITOR_DURATION_MS: u64 = 20000;
-    const CHECK_INTERVAL_MS: u64 = 500;
-    let mut elapsed = 0u64;
-    
-    while elapsed < MONITOR_DURATION_MS {
-        thread::sleep(Duration::from_millis(CHECK_INTERVAL_MS));
-        elapsed += CHECK_INTERVAL_MS;
-        
-        match injector::find_process_id(process_name) {
-            Ok(Some(_)) => {
-                // Process still alive, continue monitoring
-                println!("Process alive at {}ms", elapsed);
+    }
+
+    fn mark_dialog_shown(mut self) -> Self {
+        self.dialog_already_shown = true;
+        self
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub fn dialog_already_shown(&self) -> bool {
+        self.dialog_already_shown
+    }
+
+    pub fn into_message(self) -> String {
+        self.message
+    }
+}
+
+impl From<String> for LaunchError {
+    fn from(message: String) -> Self {
+        Self::new(message)
+    }
+}
+
+#[derive(Clone)]
+struct StatusEmitter {
+    app_handle: AppHandle,
+}
+
+impl StatusEmitter {
+    fn new(app_handle: AppHandle) -> Self {
+        Self { app_handle }
+    }
+
+    fn emit(&self, status: &str) {
+        if let Err(error) = self.app_handle.emit_all(STATUS_EVENT, status) {
+            eprintln!("Failed to emit injection status '{status}': {error}");
+        }
+    }
+
+    fn show_then_idle(&self, status: &str, delay: Duration) {
+        self.emit(status);
+        thread::sleep(delay);
+        self.emit(STATUS_IDLE);
+    }
+}
+
+struct StatusAnimation {
+    should_run: Arc<AtomicBool>,
+    handle: Option<thread::JoinHandle<()>>,
+}
+
+impl StatusAnimation {
+    fn start(status: StatusEmitter, label: &'static str) -> Self {
+        let should_run = Arc::new(AtomicBool::new(true));
+        let animation_flag = Arc::clone(&should_run);
+
+        let handle = thread::spawn(move || {
+            let dots = ["", ".", "..", "..."];
+            let mut dot_index = 0;
+
+            while animation_flag.load(Ordering::Relaxed) {
+                let current_status = format!("{label}{}", dots[dot_index]);
+                status.emit(&current_status);
+                dot_index = (dot_index + 1) % dots.len();
+                thread::sleep(STATUS_ANIMATION_DELAY);
             }
-            Ok(None) => {
-                // Process died - stop animation and return crashed
-                println!("Process died after {}ms", elapsed);
-                should_animate.store(false, Ordering::Relaxed);
-                let _ = animation_thread.join();
-                return true;
-            }
-            Err(e) => {
-                // Error checking process, assume failure
-                eprintln!("Error monitoring process: {}", e);
-                should_animate.store(false, Ordering::Relaxed);
-                let _ = animation_thread.join();
-                return true;
+        });
+
+        Self {
+            should_run,
+            handle: Some(handle),
+        }
+    }
+}
+
+impl Drop for StatusAnimation {
+    fn drop(&mut self) {
+        self.should_run.store(false, Ordering::Relaxed);
+
+        if let Some(handle) = self.handle.take() {
+            if handle.join().is_err() {
+                eprintln!("Status animation thread panicked.");
             }
         }
     }
-    
-    // Process survived the monitoring period - stop animation and return success
-    println!("Process survived {}ms monitoring period", MONITOR_DURATION_MS);
-    should_animate.store(false, Ordering::Relaxed);
-    let _ = animation_thread.join();
-    false
+}
+
+enum ProcessMonitorOutcome {
+    Running,
+    Exited,
+}
+
+pub async fn inject(
+    state: &AppState,
+    request: InjectRequest,
+    app_handle: &AppHandle,
+) -> Result<(), LaunchError> {
+    let _guard = state.try_begin_injection().map_err(LaunchError::from)?;
+    println!("Injecting...");
+
+    let dll_path = resolve_dll_path(state, request)
+        .await
+        .map_err(LaunchError::from)?;
+    let app_handle = app_handle.clone();
+
+    tauri::async_runtime::spawn_blocking(move || inject_with_status(dll_path, app_handle))
+        .await
+        .map_err(|error| LaunchError::new(format!("Injection task failed: {error}")))?
+}
+
+fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), LaunchError> {
+    let status = StatusEmitter::new(app_handle);
+    let pid = find_or_launch_minecraft(&status)?;
+
+    let injection_started_at = Instant::now();
+    let injection_animation = StatusAnimation::start(status.clone(), "Injecting");
+    let injection_result = injector::inject_dll(pid, &dll_path).map_err(LaunchError::from);
+
+    wait_for_minimum_duration(injection_started_at, INJECTION_MIN_STATUS_TIME);
+    drop(injection_animation);
+
+    if let Err(error) = injection_result {
+        return Err(report_failure(
+            &status,
+            "Failed to inject",
+            error.into_message(),
+            FAILURE_STATUS_TIME,
+        ));
+    }
+
+    match monitor_process_after_injection(MC_PROCESS_NAME, &status)? {
+        ProcessMonitorOutcome::Running => {
+            status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
+            Ok(())
+        }
+        ProcessMonitorOutcome::Exited => Err(report_failure(
+            &status,
+            "Failed to inject",
+            "Minecraft process closed after DLL injection. The DLL may be incompatible with your Minecraft version.",
+            FAILURE_STATUS_TIME,
+        )),
+    }
+}
+
+fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<u32, LaunchError> {
+    if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME).map_err(LaunchError::from)? {
+        println!("Minecraft process found with PID: {pid}");
+        status.emit("Injecting");
+        return Ok(pid);
+    }
+
+    status.emit("Opening Minecraft");
+
+    if let Err(error) = launch_minecraft() {
+        return Err(report_failure(
+            status,
+            "Cannot open Minecraft",
+            error,
+            LAUNCH_FAILURE_STATUS_TIME,
+        ));
+    }
+
+    wait_for_process(MC_PROCESS_NAME)
+        .map_err(|error| report_failure(status, "Minecraft not found", error, FAILURE_STATUS_TIME))
+}
+
+fn report_failure(
+    status: &StatusEmitter,
+    status_message: &str,
+    error: impl Into<String>,
+    delay: Duration,
+) -> LaunchError {
+    let error = LaunchError::new(error.into());
+    status.emit(status_message);
+    // TODO: Append directions to report the bug with Latite Debug to all error messages
+    // TODO: not related to report_failure specifically but while I'm here I might as well add
+    // that we should be logging all these print's to a file, similar to how the old latiteinjector
+    // does it.
+    println!("{}", error.message());
+    crate::dialogs::show_error("Latite Client", error.message());
+    thread::sleep(delay);
+    status.emit(STATUS_IDLE);
+    error.mark_dialog_shown()
+}
+
+fn wait_for_minimum_duration(started_at: Instant, minimum_duration: Duration) {
+    let elapsed = started_at.elapsed();
+
+    if elapsed < minimum_duration {
+        thread::sleep(minimum_duration - elapsed);
+    }
+}
+
+fn monitor_process_after_injection(
+    process_name: &str,
+    status: &StatusEmitter,
+) -> Result<ProcessMonitorOutcome, LaunchError> {
+    let _animation: StatusAnimation = StatusAnimation::start(status.clone(), "Finalizing");
+    let monitor_iterations =
+        POST_INJECTION_MONITOR_DURATION.as_millis() / POST_INJECTION_MONITOR_INTERVAL.as_millis();
+
+    for attempt in 1..=monitor_iterations {
+        thread::sleep(POST_INJECTION_MONITOR_INTERVAL);
+        let elapsed_ms = attempt * POST_INJECTION_MONITOR_INTERVAL.as_millis();
+
+        match injector::find_process_id(process_name) {
+            Ok(Some(_)) => println!("Process alive at {elapsed_ms}ms"),
+            Ok(None) => {
+                println!("Process died after {elapsed_ms}ms");
+                return Ok(ProcessMonitorOutcome::Exited);
+            }
+            Err(error) => {
+                return Err(report_failure(
+                    status,
+                    "Failed to verify injection",
+                    format!("Failed to confirm Minecraft stayed open after injection: {error}"),
+                    FAILURE_STATUS_TIME,
+                ));
+            }
+        }
+    }
+
+    println!(
+        "Process survived {}ms monitoring period",
+        POST_INJECTION_MONITOR_DURATION.as_millis()
+    );
+    Ok(ProcessMonitorOutcome::Running)
 }
 
 async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
@@ -255,13 +358,13 @@ fn launch_minecraft() -> Result<(), String> {
     Ok(())
 }
 
-fn wait_for_process_with_animation(process_name: &str, _app_handle: &AppHandle) -> Result<u32, String> {
+fn wait_for_process(process_name: &str) -> Result<u32, String> {
     for attempt in 0..PROCESS_LOOKUP_ATTEMPTS {
         println!(
             "Waiting for {process_name}... ({}/{PROCESS_LOOKUP_ATTEMPTS})",
             attempt + 1
         );
-        
+
         thread::sleep(PROCESS_LOOKUP_DELAY);
 
         if let Some(pid) = injector::find_process_id(process_name)? {

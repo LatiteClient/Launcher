@@ -4,16 +4,19 @@ use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 
 use windows::core::s;
-use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED, WAIT_OBJECT_0};
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS,
 };
 use windows::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
-use windows::Win32::System::Memory::{VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE};
+use windows::Win32::System::Memory::{
+    VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
+};
 use windows::Win32::System::Threading::{
-    CreateRemoteThread, GetExitCodeThread, OpenProcess, WaitForSingleObject, INFINITE, PROCESS_CREATE_THREAD,
-    PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
+    CreateRemoteThread, GetExitCodeThread, OpenProcess, WaitForSingleObject, INFINITE,
+    PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
+    PROCESS_VM_WRITE,
 };
 
 type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
@@ -60,9 +63,11 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
         return Err(win32_error("VirtualAllocEx failed"));
     }
 
+    let allocated_memory = RemoteAllocation::new(process_handle.raw(), allocated_memory);
+
     WriteProcessMemory(
         process_handle.raw(),
-        allocated_memory,
+        allocated_memory.raw(),
         dll_path_wide.as_ptr().cast(),
         dll_path_size,
         None,
@@ -80,14 +85,24 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
         None,
         0,
         Some(start_routine),
-        Some(allocated_memory),
+        Some(allocated_memory.raw()),
         0,
         None,
     )
     .map_err(|error| format!("CreateRemoteThread failed: {error}"))?;
     let remote_thread = OwnedHandle::new(remote_thread);
 
-    WaitForSingleObject(remote_thread.raw(), INFINITE);
+    let wait_result = WaitForSingleObject(remote_thread.raw(), INFINITE);
+
+    if wait_result == WAIT_FAILED {
+        return Err(win32_error("WaitForSingleObject failed"));
+    }
+
+    if wait_result != WAIT_OBJECT_0 {
+        return Err(format!(
+            "WaitForSingleObject returned an unexpected status: {wait_result:?}"
+        ));
+    }
 
     // Check if the LoadLibraryW call succeeded
     let mut thread_exit_code: u32 = 0;
@@ -98,7 +113,10 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
         return Err("LoadLibraryW failed: DLL could not be loaded (exit code was 0).".to_string());
     }
 
-    println!("Injected {} into process {pid}. LoadLibraryW returned: {:#x}", full_dll_path.display(), thread_exit_code);
+    println!(
+        "Injected {} into process {pid}. LoadLibraryW returned: {thread_exit_code:#x}",
+        full_dll_path.display()
+    );
     Ok(())
 }
 
@@ -159,6 +177,34 @@ impl Drop for OwnedHandle {
     fn drop(&mut self) {
         unsafe {
             let _ = CloseHandle(self.0);
+        }
+    }
+}
+
+struct RemoteAllocation {
+    process: HANDLE,
+    address: *mut c_void,
+}
+
+impl RemoteAllocation {
+    fn new(process: HANDLE, address: *mut c_void) -> Self {
+        Self { process, address }
+    }
+
+    fn raw(&self) -> *mut c_void {
+        self.address
+    }
+}
+
+impl Drop for RemoteAllocation {
+    fn drop(&mut self) {
+        unsafe {
+            if let Err(error) = VirtualFreeEx(self.process, self.address, 0, MEM_RELEASE) {
+                eprintln!(
+                    "Failed to free remote allocation at {:p}: {error}",
+                    self.address
+                );
+            }
         }
     }
 }
