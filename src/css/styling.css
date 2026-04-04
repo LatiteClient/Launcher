@@ -220,6 +220,19 @@ body {
 	user-select: none;
 }
 
+#statusContainer {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	height: 1.4em;
+	position: relative;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
 #launchSubtext {
 	color: #f0f0f0a8;
 	align-self: center;
@@ -230,6 +243,53 @@ body {
 	-webkit-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	white-space: nowrap;
+	transition: none;
+}
+
+.status-message {
+	color: #f0f0f0a8;
+	align-self: center;
+	font:
+		400 14px "Segoe UI",
+		sans-serif;
+	text-align: center;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	white-space: nowrap;
+}
+
+.status-slide-enter {
+	animation: slideUp 0.4s ease-out forwards;
+}
+
+.status-slide-exit {
+	animation: slideOutUp 0.4s ease-out forwards;
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(100%);
+		opacity: 0;
+	}
+
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes slideOutUp {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+
+	to {
+		transform: translateY(-100%);
+		opacity: 0;
+	}
 }
 
 p {
