@@ -280,7 +280,7 @@ async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<Pa
 async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
     let dll_path = paths::get_dll_path()?;
     let previous_version = state.get_last_used_version()?;
-    let latest_version = match release::fetch_latest_release_name().await {
+    let latest_dll_version = match release::fetch_latest_release_name(release::DLL_REPO).await {
         Ok(version) => {
             println!("Latest release version: {version}");
             Some(version)
@@ -292,7 +292,7 @@ async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
     };
 
     let dll_missing = !dll_path.exists();
-    let has_newer_release = latest_version
+    let has_newer_release = latest_dll_version
         .as_deref()
         .is_some_and(|version| previous_version.as_deref() != Some(version));
     let needs_download = dll_missing || has_newer_release;
@@ -300,7 +300,7 @@ async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
     if needs_download {
         release::download_latest_dll(&dll_path).await?;
 
-        if let Some(version) = latest_version {
+        if let Some(version) = latest_dll_version {
             state.set_last_used_version(Some(version))?;
         }
     }

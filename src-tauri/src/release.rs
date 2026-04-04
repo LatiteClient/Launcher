@@ -4,10 +4,10 @@ use reqwest::header::USER_AGENT;
 use serde::Deserialize;
 
 // TODO: Move to main Latite repo instead of using Latite-Releases
-const RELEASE_API_URL: &str =
-    "https://api.github.com/repos/Imrglop/Latite-Releases/releases/latest";
-const DLL_DOWNLOAD_URL: &str =
-    "https://github.com/Imrglop/Latite-Releases/releases/latest/download/Latite.dll";
+pub const DLL_REPO: &str = "Imrglop/Latite-Releases";
+pub const LAUNCHER_REPO: &str = "LatiteClient/Launcher";
+
+const DLL_RELEASE_DOWNLOAD_PATH: &str = "releases/latest/download/Latite.dll";
 const REQUEST_USER_AGENT: &str = "Latite Launcher/0.1";
 
 #[derive(Deserialize)]
@@ -15,9 +15,9 @@ struct GitHubRelease {
     tag_name: String,
 }
 
-pub async fn fetch_latest_release_name() -> Result<String, String> {
+pub async fn fetch_latest_release_name(repo: &str) -> Result<String, String> {
     let response = reqwest::Client::new()
-        .get(RELEASE_API_URL)
+        .get(&format!("https://api.github.com/repos/{}/releases/latest", repo))
         .header(USER_AGENT, REQUEST_USER_AGENT)
         .send()
         .await
@@ -41,7 +41,7 @@ pub async fn fetch_latest_release_name() -> Result<String, String> {
 }
 
 pub async fn download_latest_dll(destination: &Path) -> Result<(), String> {
-    let response = reqwest::get(DLL_DOWNLOAD_URL)
+    let response = reqwest::get(format!("https://github.com/{}/{}", DLL_REPO, DLL_RELEASE_DOWNLOAD_PATH))
         .await
         .map_err(|error| format!("Failed to download DLL: {error}"))?;
 
