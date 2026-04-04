@@ -7,8 +7,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "Latite Client Launcher",
-    "version": "0.0.0"
+    "productName": "Latite Client Launcher"
   },
   "tauri": {
     "allowlist": {
