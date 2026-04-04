@@ -23,20 +23,22 @@ async fn inject(
     let close_after_injected = match state.get_bool_option("misc_close_after_injected") {
         Ok(value) => value,
         Err(error) => {
-            dialogs::show_error("Latite Client", &error);
+            dialogs::show_error(&error);
             return Err(error);
         }
     };
 
-    let result = launcher::inject(state.inner(), request).await;
+    let result = launcher::inject(state.inner(), request, &app_handle).await;
 
     if let Err(error) = &result {
-        dialogs::show_error("Latite Client", error);
+        if !error.dialog_already_shown() {
+            dialogs::show_error(error.message());
+        }
     } else if close_after_injected {
         app_handle.exit(0);
     }
 
-    result
+    result.map_err(launcher::LaunchError::into_message)
 }
 
 #[tauri::command]
@@ -49,12 +51,31 @@ fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
     state.get_bool_option(id)
 }
 
+#[tauri::command]
+fn open_folder() -> Result<(), String> {
+    let local_appdata = std::env::var("LOCALAPPDATA")
+        .map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
+    
+    let folder_path = std::path::Path::new(&local_appdata).join("Latite");
+    
+    // Create the folder if it doesn't exist
+    let _ = std::fs::create_dir_all(&folder_path);
+    
+    // Use explorer to open the folder
+    std::process::Command::new("explorer")
+        .arg(folder_path.to_string_lossy().to_string())
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
+    
+    Ok(())
+}
+
 fn main() {
     let app_state = match AppState::new() {
         Ok(state) => state,
         Err(error) => {
             let message = format!("Failed to initialize launcher: {error}");
-            dialogs::show_error("Latite Client", &message);
+            dialogs::show_error(&message);
             eprintln!("{message}");
             return;
         }
@@ -62,7 +83,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![inject, update_option, get_option])
+        .invoke_handler(tauri::generate_handler![inject, update_option, get_option, open_folder])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
