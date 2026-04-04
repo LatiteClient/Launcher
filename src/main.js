@@ -153,7 +153,7 @@ if (githubLink) {
 
 if (discordLink) {
   discordLink.addEventListener("click", () => {
-    openUrl("https://discord.com/invite/latite").catch((error) => {
+    openUrl("https://latite.net/discord").catch((error) => {
       console.error("Failed to open Discord link:", error);
     });
   });
