@@ -21,9 +21,9 @@ const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
 const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
-const FAILURE_STATUS_TIME: Duration = Duration::from_secs(7);
+const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
 const LAUNCH_FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(20);
+const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(5);
 const POST_INJECTION_MONITOR_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
@@ -374,6 +374,6 @@ fn wait_for_process(process_name: &str) -> Result<u32, String> {
     }
 
     Err(format!(
-        "{process_name} was not found after launching. Please try again."
+        "{process_name} was not found after launching. Please try launching again, or please make sure Minecraft is installed."
     ))
 }

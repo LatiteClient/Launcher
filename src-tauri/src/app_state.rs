@@ -25,7 +25,7 @@ impl AppState {
     pub fn try_begin_injection(&self) -> Result<InjectionGuard<'_>, String> {
         self.is_injecting
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .map_err(|_| "Injection is already in progress.".to_string())?;
+            .map_err(|_| "Injection is already in progress. Please wait until Status: Idle".to_string())?;
 
         Ok(InjectionGuard {
             flag: &self.is_injecting,

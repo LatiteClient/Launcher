@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api";
-import { open } from "@tauri-apps/api/dialog";
+import { open as openDialog } from "@tauri-apps/api/dialog";
 import { listen } from "@tauri-apps/api/event";
+import { open as openUrl } from "@tauri-apps/api/shell";
 
 const launchButton = document.getElementById("launchButton");
 
@@ -11,7 +12,7 @@ launchButton.addEventListener("click", () => {
 launchButton.addEventListener("contextmenu", async (event) => {
   event.preventDefault();
 
-  const selected = await open({
+  const selected = await openDialog({
     title: "Select a DLL to inject",
     multiple: false,
     filters: [
@@ -135,5 +136,36 @@ for (let i = 0; i < items.length; i++) {
     } else {
       console.error("Non-implemented element type: " + element.type);
     }
+  });
+}
+
+/* External Links - Open in Default Browser */
+const githubLink = document.getElementById("github");
+const discordLink = document.getElementById("discord");
+
+if (githubLink) {
+  githubLink.addEventListener("click", () => {
+    openUrl("https://github.com/LatiteClient/Latite").catch((error) => {
+      console.error("Failed to open GitHub link:", error);
+    });
+  });
+}
+
+if (discordLink) {
+  discordLink.addEventListener("click", () => {
+    openUrl("https://discord.com/invite/latite").catch((error) => {
+      console.error("Failed to open Discord link:", error);
+    });
+  });
+}
+
+/* Open Folder */
+const openFolderBtn = document.getElementById("openFolder");
+
+if (openFolderBtn) {
+  openFolderBtn.addEventListener("click", () => {
+    invoke("open_folder").catch((error) => {
+      console.error("Failed to open folder:", error);
+    });
   });
 }

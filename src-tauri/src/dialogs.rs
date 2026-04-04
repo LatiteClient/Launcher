@@ -1,7 +1,7 @@
 use std::ffi::CString;
 
 use windows::core::PCSTR;
-use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_ICONERROR, MB_OK};
+use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_ICONERROR, MB_OK, MB_TOPMOST};
 
 // TODO: implement actual tauri dialog instead of ghetto ass win32 messagebox
 pub fn show_error(title: &str, message: &str) {
@@ -13,7 +13,7 @@ pub fn show_error(title: &str, message: &str) {
             None,
             PCSTR(message.as_ptr().cast()),
             PCSTR(title.as_ptr().cast()),
-            MB_ICONERROR | MB_OK,
+            MB_ICONERROR | MB_OK | MB_TOPMOST,
         );
     }
 }
