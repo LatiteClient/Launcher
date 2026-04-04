@@ -220,7 +220,7 @@ fn report_failure(
     // that we should be logging all these print's to a file, similar to how the old latiteinjector
     // does it.
     println!("{}", error.message());
-    crate::dialogs::show_error("Latite Client", error.message());
+    crate::dialogs::show_error(error.message());
     thread::sleep(delay);
     status.emit(STATUS_IDLE);
     error.mark_dialog_shown()

@@ -19,6 +19,7 @@
       },
       "dialog": {
         "all": false,
+        "message": true,
         "open": true
       },
       "window": {

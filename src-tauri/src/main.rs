@@ -23,7 +23,7 @@ async fn inject(
     let close_after_injected = match state.get_bool_option("misc_close_after_injected") {
         Ok(value) => value,
         Err(error) => {
-            dialogs::show_error("Latite Client", &error);
+            dialogs::show_error(&error);
             return Err(error);
         }
     };
@@ -32,7 +32,7 @@ async fn inject(
 
     if let Err(error) = &result {
         if !error.dialog_already_shown() {
-            dialogs::show_error("Latite Client", error.message());
+            dialogs::show_error(error.message());
         }
     } else if close_after_injected {
         app_handle.exit(0);
@@ -75,7 +75,7 @@ fn main() {
         Ok(state) => state,
         Err(error) => {
             let message = format!("Failed to initialize launcher: {error}");
-            dialogs::show_error("Latite Client", &message);
+            dialogs::show_error(&message);
             eprintln!("{message}");
             return;
         }
