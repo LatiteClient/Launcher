@@ -172,8 +172,19 @@ latiteBuildInputs.forEach((input) => {
 });
 
 /* External Links - Open in Default Browser */
+const changelogLink = document.getElementById("changelog");
 const githubLink = document.getElementById("github");
 const discordLink = document.getElementById("discord");
+
+if (changelogLink) {
+  changelogLink.addEventListener("click", () => {
+    openUrl("https://github.com/LatiteClient/Latite/releases/latest").catch(
+      (error) => {
+        console.error("Failed to open latest changelog link:", error);
+      },
+    );
+  });
+}
 
 if (githubLink) {
   githubLink.addEventListener("click", () => {
