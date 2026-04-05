@@ -1,4 +1,6 @@
 use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
     path::{Path, PathBuf},
     process::Command,
     sync::{
@@ -433,7 +435,8 @@ fn is_custom_dll_url(value: &str) -> bool {
 }
 
 fn validate_custom_dll_url(url: &str) -> Result<(), String> {
-    let parsed_url = url::Url::parse(url).map_err(|error| format!("Invalid DLL URL: {error}"))?;
+    let parsed_url =
+        reqwest::Url::parse(url).map_err(|error| format!("Invalid DLL URL: {error}"))?;
 
     match parsed_url.scheme() {
         "http" | "https" => Ok(()),
@@ -450,8 +453,10 @@ async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
         )
     })?;
 
-    let downloaded_dll_path =
-        custom_dll_cache.join(format!("custom-{:x}.dll", fxhash::hash64(&url)));
+    let mut hasher = DefaultHasher::new();
+    url.hash(&mut hasher);
+    let download_id = hasher.finish();
+    let downloaded_dll_path = custom_dll_cache.join(format!("custom-{download_id:016x}.dll"));
 
     let response = reqwest::get(url)
         .await
