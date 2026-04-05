@@ -301,7 +301,7 @@ async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<Pa
     let InjectRequest { dll_path, build } = request;
 
     match dll_path {
-        Some(dll_path) => validate_custom_dll_path(dll_path),
+        Some(dll_path) => resolve_custom_dll_path(dll_path).await,
         None => prepare_latite_dll(state, resolve_latite_build(state, build)?).await,
     }
 }
@@ -385,7 +385,7 @@ async fn prepare_mutable_build(build: BuildKind, build_path: &Path) -> Result<()
 }
 
 fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
-    let dll_path = PathBuf::from(dll_path);
+    let dll_path = PathBuf::from(dll_path.trim());
 
     if !dll_path.exists() {
         return Err(format!(
@@ -415,6 +415,66 @@ fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
 
     std::fs::canonicalize(&dll_path)
         .map_err(|error| format!("Failed to resolve DLL path {}: {error}", dll_path.display()))
+}
+
+async fn resolve_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
+    let dll_path = dll_path.trim().to_string();
+
+    if is_custom_dll_url(&dll_path) {
+        validate_custom_dll_url(&dll_path)?;
+        return download_custom_dll(&dll_path).await;
+    }
+
+    validate_custom_dll_path(dll_path)
+}
+
+fn is_custom_dll_url(value: &str) -> bool {
+    value.starts_with("http://") || value.starts_with("https://")
+}
+
+fn validate_custom_dll_url(url: &str) -> Result<(), String> {
+    let parsed_url = url::Url::parse(url).map_err(|error| format!("Invalid DLL URL: {error}"))?;
+
+    match parsed_url.scheme() {
+        "http" | "https" => Ok(()),
+        _ => Err("Custom DLL URLs must use http or https.".to_string()),
+    }
+}
+
+async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
+    let custom_dll_cache = std::env::temp_dir().join("Latite").join("CustomDLLs");
+    std::fs::create_dir_all(&custom_dll_cache).map_err(|error| {
+        format!(
+            "Failed to create the custom DLL cache at {}: {error}",
+            custom_dll_cache.display()
+        )
+    })?;
+
+    let downloaded_dll_path =
+        custom_dll_cache.join(format!("custom-{:x}.dll", fxhash::hash64(&url)));
+
+    let response = reqwest::get(url)
+        .await
+        .map_err(|error| format!("Failed to download DLL from {url}: {error}"))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!("Failed to download DLL from {url}: HTTP {}", status));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("Failed to read the downloaded DLL from {url}: {error}"))?;
+
+    std::fs::write(&downloaded_dll_path, &bytes).map_err(|error| {
+        format!(
+            "Failed to save the downloaded DLL to {}: {error}",
+            downloaded_dll_path.display()
+        )
+    })?;
+
+    Ok(downloaded_dll_path)
 }
 
 fn launch_minecraft() -> Result<(), String> {

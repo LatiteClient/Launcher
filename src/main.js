@@ -5,8 +5,14 @@ import { open as openUrl } from "@tauri-apps/api/shell";
 
 const launchButton = document.getElementById("launchButton");
 
-launchButton.addEventListener("click", () => {
-  inject({});
+launchButton.addEventListener("click", async () => {
+  const request = await buildLaunchRequest();
+
+  if (!request) {
+    return;
+  }
+
+  inject(request);
 });
 
 launchButton.addEventListener("contextmenu", async (event) => {
@@ -38,6 +44,52 @@ function inject(request) {
   invoke("inject", { request }).catch((error) => {
     console.error("Inject failed:", error);
   });
+}
+
+function isCustomDllUrl(value) {
+  try {
+    const parsedUrl = new URL(value);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isCustomDllPath(value) {
+  return (
+    /^[a-z]:[\\/].+\.dll$/i.test(value) ||
+    /^\\\\.+\.dll$/i.test(value) ||
+    /^\.{1,2}[\\/].+\.dll$/i.test(value)
+  );
+}
+
+function validateCustomDllValue(value) {
+  if (!value) {
+    return "Enter a DLL path or URL before launching.";
+  }
+
+  if (isCustomDllUrl(value) || isCustomDllPath(value)) {
+    return null;
+  }
+
+  return "Enter a valid DLL path or URL ending in .dll.";
+}
+
+async function buildLaunchRequest() {
+  if (!useCustomDllInput?.checked) {
+    return {};
+  }
+
+  const customDllValue = customDllInput?.value.trim() ?? "";
+  const validationError = validateCustomDllValue(customDllValue);
+
+  if (validationError) {
+    alert(validationError);
+    customDllInput?.focus();
+    return null;
+  }
+
+  return { dllPath: customDllValue };
 }
 
 let statusUpdateInProgress = false;
