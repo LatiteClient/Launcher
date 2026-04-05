@@ -11,7 +11,7 @@ The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclien
 - [ ] Minimize to tray
 - [x] Close after injected
 - [x] Status Text
-- [ ] Option to use Latite Nightly/Debug
+- [x] Option to use Latite Nightly/Debug
 
 ## Recommended IDE Setup
 
