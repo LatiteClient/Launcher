@@ -143,6 +143,34 @@ for (let i = 0; i < items.length; i++) {
   });
 }
 
+const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
+
+invoke("get_latite_build")
+  .then((build) => {
+    const selectedInput = document.querySelector(
+      `.latite_build_input[value="${build}"]`,
+    );
+
+    if (selectedInput) {
+      selectedInput.checked = true;
+    }
+  })
+  .catch((error) => {
+    console.error("Failed to load Latite build setting:", error);
+  });
+
+latiteBuildInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    if (!input.checked) {
+      return;
+    }
+
+    invoke("update_latite_build", { build: input.value }).catch((error) => {
+      console.error("Failed to update Latite build setting:", error);
+    });
+  });
+});
+
 /* External Links - Open in Default Browser */
 const githubLink = document.getElementById("github");
 const discordLink = document.getElementById("discord");

@@ -1,5 +1,5 @@
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -10,7 +10,10 @@ use std::{
 };
 
 use crate::{
-    app_state::AppState, inject as injector, launch_request::InjectRequest, paths, release,
+    app_state::AppState,
+    inject as injector,
+    launch_request::{BuildKind, InjectRequest},
+    paths, release,
 };
 use tauri::{AppHandle, Manager};
 
@@ -271,14 +274,44 @@ fn monitor_process_after_injection(
 }
 
 async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
-    match request.dll_path {
+    let InjectRequest { dll_path, build } = request;
+
+    match dll_path {
         Some(dll_path) => validate_custom_dll_path(dll_path),
-        None => prepare_latite_dll(state).await,
+        None => prepare_latite_dll(state, resolve_latite_build(state, build)?).await,
     }
 }
 
-async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
-    let dll_path = paths::get_dll_path()?;
+fn resolve_latite_build(
+    state: &AppState,
+    requested_build: Option<BuildKind>,
+) -> Result<BuildKind, String> {
+    match requested_build {
+        Some(build) => Ok(build),
+        None => state.get_latite_build(),
+    }
+}
+
+async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<PathBuf, String> {
+    let build_path = paths::get_latite_build_path(build)?;
+    let dll_path = build_path.join(release::latite_dll_file_name(build));
+
+    match build {
+        BuildKind::Release => prepare_release_dll(state, &build_path).await?,
+        BuildKind::Nightly | BuildKind::Debug => prepare_mutable_build(build, &build_path).await?,
+    }
+
+    if !release::has_required_assets(build, &build_path) {
+        return Err(format!(
+            "{} files are missing and could not be downloaded.",
+            release::build_display_name(build)
+        ));
+    }
+
+    Ok(dll_path)
+}
+
+async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), String> {
     let previous_version = state.get_last_used_version()?;
     let latest_version = match release::fetch_latest_release_name().await {
         Ok(version) => {
@@ -291,25 +324,40 @@ async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
         }
     };
 
-    let dll_missing = !dll_path.exists();
+    let release_cached = release::has_required_assets(BuildKind::Release, build_path);
     let has_newer_release = latest_version
         .as_deref()
         .is_some_and(|version| previous_version.as_deref() != Some(version));
-    let needs_download = dll_missing || has_newer_release;
+    let needs_download = !release_cached || has_newer_release;
 
     if needs_download {
-        release::download_latest_dll(&dll_path).await?;
+        release::download_build(BuildKind::Release, build_path).await?;
 
         if let Some(version) = latest_version {
             state.set_last_used_version(Some(version))?;
         }
     }
 
-    if !dll_path.exists() {
-        return Err("Latite.dll is missing and could not be downloaded.".to_string());
-    }
+    Ok(())
+}
 
-    Ok(dll_path)
+async fn prepare_mutable_build(build: BuildKind, build_path: &Path) -> Result<(), String> {
+    let cached_assets_exist = release::has_required_assets(build, build_path);
+
+    // Nightly and debug are mutable tags, so refresh them when possible.
+    match release::download_build(build, build_path).await {
+        Ok(_) => Ok(()),
+        Err(error) if cached_assets_exist => {
+            eprintln!("{error}");
+            println!(
+                "Using cached {} files from {}.",
+                release::build_display_name(build),
+                build_path.display()
+            );
+            Ok(())
+        }
+        Err(error) => Err(error),
+    }
 }
 
 fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {

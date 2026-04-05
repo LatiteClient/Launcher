@@ -11,7 +11,7 @@ mod paths;
 mod release;
 
 use app_state::AppState;
-use launch_request::InjectRequest;
+use launch_request::{BuildKind, InjectRequest};
 use tauri::State;
 
 #[tauri::command]
@@ -52,6 +52,16 @@ fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn get_latite_build(state: State<'_, AppState>) -> Result<BuildKind, String> {
+    state.get_latite_build()
+}
+
+#[tauri::command]
+fn update_latite_build(build: BuildKind, state: State<'_, AppState>) -> Result<(), String> {
+    state.update_latite_build(build)
+}
+
+#[tauri::command]
 fn open_folder() -> Result<(), String> {
     let local_appdata =
         std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
@@ -87,6 +97,8 @@ fn main() {
             inject,
             update_option,
             get_option,
+            get_latite_build,
+            update_latite_build,
             open_folder
         ])
         .run(tauri::generate_context!())

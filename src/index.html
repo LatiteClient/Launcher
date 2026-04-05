@@ -97,6 +97,70 @@
 
         <div class="centersettings">
           <div class="settingsection">
+            <h2>Latite Build</h2>
+            <div class="latiteBuildOptions">
+              <label class="latiteBuildChoice">
+                <input
+                  type="radio"
+                  name="latite_build"
+                  value="release"
+                  class="latite_build_input"
+                />
+                <span class="latiteBuildCard">
+                  <span class="latiteBuildTitle">Latite Release</span>
+                  <span class="latiteBuildDescription">
+                    Stable, default build of Latite Client
+                  </span>
+                </span>
+              </label>
+
+              <label class="latiteBuildChoice">
+                <input
+                  type="radio"
+                  name="latite_build"
+                  value="nightly"
+                  class="latite_build_input"
+                />
+                <span class="latiteBuildCard">
+                  <span class="latiteBuildTitle">Latite Nightly</span>
+                  <span class="latiteBuildDescription">
+                    Automated, experimental builds of Latite Client containing
+                    the latest changes
+                    <p class="latiteBuildDescription">
+                      <strong
+                        >These builds have a higher chance of containing bugs or
+                        crashes.</strong
+                      >
+                    </p>
+                  </span>
+                </span>
+              </label>
+
+              <label class="latiteBuildChoice">
+                <input
+                  type="radio"
+                  name="latite_build"
+                  value="debug"
+                  class="latite_build_input"
+                />
+                <span class="latiteBuildCard">
+                  <span class="latiteBuildTitle">Latite Debug</span>
+                  <span class="latiteBuildDescription">
+                    Automated, experimental builds of Latite Client meant for
+                    detailed bug reports
+                  </span>
+                  <p class="latiteBuildDescription">
+                    <strong
+                      >These builds will run slower than Latite Release or
+                      Nightly</strong
+                    >
+                  </p>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settingsection">
             <h2>Discord RPC</h2>
             <div class="settingoption">
               <p>Discord Rich Presence</p>

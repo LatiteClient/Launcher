@@ -3,7 +3,7 @@ use std::sync::{
     Mutex, MutexGuard,
 };
 
-use crate::options::OptionsStore;
+use crate::{launch_request::BuildKind, options::OptionsStore};
 
 pub struct AppState {
     options: Mutex<OptionsStore>,
@@ -42,6 +42,17 @@ impl AppState {
     pub fn update_bool_option(&self, id: &str, value: bool) -> Result<(), String> {
         let mut options = self.lock_options()?;
         options.set_bool(id, value)?;
+        options.save()
+    }
+
+    pub fn get_latite_build(&self) -> Result<BuildKind, String> {
+        let options = self.lock_options()?;
+        Ok(options.latite_build())
+    }
+
+    pub fn update_latite_build(&self, build: BuildKind) -> Result<(), String> {
+        let mut options = self.lock_options()?;
+        options.set_latite_build(build);
         options.save()
     }
 

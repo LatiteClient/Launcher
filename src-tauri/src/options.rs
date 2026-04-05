@@ -2,7 +2,10 @@ use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 
+use crate::launch_request::BuildKind;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 struct Options {
     rpc_enabled: bool,
     rpc_show_server: bool,
@@ -10,6 +13,7 @@ struct Options {
     rpc_show_time_played: bool,
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
+    latite_build: BuildKind,
     last_used_version: Option<String>,
 }
 
@@ -72,6 +76,14 @@ impl OptionsStore {
         Ok(())
     }
 
+    pub fn latite_build(&self) -> BuildKind {
+        self.options.latite_build
+    }
+
+    pub fn set_latite_build(&mut self, build: BuildKind) {
+        self.options.latite_build = build;
+    }
+
     pub fn last_used_version(&self) -> Option<&str> {
         self.options.last_used_version.as_deref()
     }
@@ -90,6 +102,7 @@ impl Default for Options {
             rpc_show_time_played: true,
             misc_hide_on_close: false,
             misc_close_after_injected: false,
+            latite_build: BuildKind::Release,
             last_used_version: None,
         }
     }
