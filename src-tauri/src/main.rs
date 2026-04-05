@@ -12,7 +12,7 @@ mod release;
 
 use app_state::AppState;
 use launch_request::{BuildKind, InjectRequest};
-use tauri::State;
+use tauri::{Manager, State};
 
 #[tauri::command]
 async fn inject(
@@ -72,6 +72,17 @@ fn update_latite_build(build: BuildKind, state: State<'_, AppState>) -> Result<(
 }
 
 #[tauri::command]
+fn minimize_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let window = app_handle
+        .get_window("main")
+        .ok_or_else(|| "Main window is unavailable.".to_string())?;
+
+    window
+        .minimize()
+        .map_err(|error| format!("Failed to minimize window: {error}"))
+}
+
+#[tauri::command]
 fn open_folder() -> Result<(), String> {
     let local_appdata =
         std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
@@ -124,6 +135,7 @@ fn main() {
             update_string_option,
             get_latite_build,
             update_latite_build,
+            minimize_window,
             open_folder
         ])
         .run(tauri::generate_context!())

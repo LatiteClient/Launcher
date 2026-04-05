@@ -147,26 +147,45 @@ body {
   font-size: 33px;
 }
 
-.close {
+.windowControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.windowControl {
   object-fit: cover;
   object-position: center;
-  width: 48px;
+  width: 42px;
+  height: 42px;
+  padding: 8px;
   margin: auto 0;
+  box-sizing: border-box;
   border-radius: 100px;
   cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 8px 18px rgba(0, 0, 0, 0.22);
   -webkit-user-drag: none;
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  transition: all 0.1s ease-in-out;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    filter 0.12s ease;
 }
 
-.close:hover {
-  filter: brightness(0.75);
+.windowControl:hover {
+  background: rgba(255, 255, 255, 0.09);
+  filter: brightness(1.08);
 }
 
-.close:active {
-  filter: brightness(0.6);
+.windowControl:active {
+  transform: translateY(1px);
+  filter: brightness(0.95);
 }
 
 .center {

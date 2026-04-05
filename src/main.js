@@ -367,3 +367,11 @@ if (openFolderBtn) {
     });
   });
 }
+
+function minimizeWindow() {
+  invoke("minimize_window").catch((error) => {
+    console.error("Failed to minimize window:", error);
+  });
+}
+
+window.minimizeWindow = minimizeWindow;

@@ -17,15 +17,23 @@
             <img loading="lazy" src="./img/latite.png" class="logoImg" />
             <div class="name">Latite Client</div>
           </div>
-          <img
-            loading="lazy"
-            src="./img/close.svg"
-            class="close"
-            onclick="
-              closeWindowAnimation();
-              closeWindowTimeout();
-            "
-          />
+          <div class="windowControls">
+            <img
+              loading="lazy"
+              src="./img/minimize.svg"
+              class="windowControl"
+              onclick="minimizeWindow()"
+            />
+            <img
+              loading="lazy"
+              src="./img/close.svg"
+              class="windowControl"
+              onclick="
+                closeWindowAnimation();
+                closeWindowTimeout();
+              "
+            />
+          </div>
         </div>
 
         <div class="center" data-tauri-drag-region>
@@ -90,7 +98,7 @@
           <img
             loading="lazy"
             src="./img/arrowback.svg"
-            class="close"
+            class="windowControl"
             onclick="returnToHome()"
           />
         </div>
