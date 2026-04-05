@@ -1465,11 +1465,13 @@ dependencies = [
 name = "latite-launcher"
 version = "0.0.0"
 dependencies = [
+ "fxhash",
  "reqwest",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "url",
  "windows 0.61.3",
 ]
 

@@ -20,10 +20,9 @@ const STATUS_IDLE: &str = "Idle";
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
-const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
-const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const LAUNCH_FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(5);
+
+const FAILURE_STATUS_TIME: Duration = Duration::from_secs(5);
+const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(7);
 const POST_INJECTION_MONITOR_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
@@ -153,13 +152,56 @@ pub async fn inject(
 
 fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), LaunchError> {
     let status = StatusEmitter::new(app_handle);
-    let pid = find_or_launch_minecraft(&status)?;
-
+    
+    // Check if Minecraft is already running without starting animation
+    let minecraft_pid = injector::find_process_id(MC_PROCESS_NAME).map_err(LaunchError::from)?;
+    
+    let (pid, _was_just_launched) = if let Some(pid) = minecraft_pid {
+        // Minecraft already running - skip "Opening Minecraft" animation entirely
+        println!("Minecraft process found with PID: {pid}");
+        (pid, false)
+    } else {
+        // Minecraft not running - start animation and launch it
+        let opening_animation = StatusAnimation::start(status.clone(), "Opening Minecraft");
+        
+        // Try to launch Minecraft and wait for it to appear
+        if let Err(_) = launch_minecraft() {
+            drop(opening_animation);  // Stop animation before showing error
+            return Err(report_failure(
+                &status,
+                "Failed to open Minecraft",
+                "Minecraft does not seem to be installed.",
+                FAILURE_STATUS_TIME,
+            ));
+        }
+        
+        match wait_for_process(MC_PROCESS_NAME) {
+            Ok(pid) => {
+                println!("Minecraft process found with PID: {pid}");
+                // Keep the Opening Minecraft animation running while we wait for game initialization
+                println!("Minecraft was just launched, waiting 5 seconds for initialization...");
+                thread::sleep(Duration::from_secs(5));
+                drop(opening_animation);  // Stop animation before injection
+                (pid, true)
+            }
+            Err(err_msg) => {
+                drop(opening_animation);  // Stop animation before showing error
+                return Err(report_failure(
+                    &status,
+                    "Failed to open Minecraft",
+                    err_msg,
+                    FAILURE_STATUS_TIME,
+                ));
+            }
+        }
+    };
+    
     let injection_started_at = Instant::now();
     let injection_animation = StatusAnimation::start(status.clone(), "Injecting");
     let injection_result = injector::inject_dll(pid, &dll_path).map_err(LaunchError::from);
 
-    wait_for_minimum_duration(injection_started_at, INJECTION_MIN_STATUS_TIME);
+    // Ensure Injecting status shows for at least 5 seconds
+    wait_for_minimum_duration(injection_started_at, Duration::from_secs(5));
     drop(injection_animation);
 
     if let Err(error) = injection_result {
@@ -185,33 +227,13 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
     }
 }
 
-fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<u32, LaunchError> {
-    if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME).map_err(LaunchError::from)? {
-        println!("Minecraft process found with PID: {pid}");
-        status.emit("Injecting");
-        return Ok(pid);
-    }
 
-    status.emit("Opening Minecraft");
-
-    if let Err(error) = launch_minecraft() {
-        return Err(report_failure(
-            status,
-            "Cannot open Minecraft",
-            error,
-            LAUNCH_FAILURE_STATUS_TIME,
-        ));
-    }
-
-    wait_for_process(MC_PROCESS_NAME)
-        .map_err(|error| report_failure(status, "Minecraft not found", error, FAILURE_STATUS_TIME))
-}
 
 fn report_failure(
     status: &StatusEmitter,
     status_message: &str,
     error: impl Into<String>,
-    delay: Duration,
+    _delay: Duration,
 ) -> LaunchError {
     let error = LaunchError::new(error.into());
     status.emit(status_message);
@@ -221,8 +243,8 @@ fn report_failure(
     // does it.
     println!("{}", error.message());
     crate::dialogs::show_error("Latite Client", error.message());
-    thread::sleep(delay);
-    status.emit(STATUS_IDLE);
+    // Don't sleep here or emit Idle - return immediately so guard can be released quickly
+    // Main thread will emit Idle after guard is released
     error.mark_dialog_shown()
 }
 
@@ -272,9 +294,48 @@ fn monitor_process_after_injection(
 
 async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
     match request.dll_path {
-        Some(dll_path) => validate_custom_dll_path(dll_path),
+        Some(dll_path) => {
+            // Check if it's a URL
+            if dll_path.starts_with("http://") || dll_path.starts_with("https://") {
+                download_custom_dll(&dll_path).await
+            } else {
+                validate_custom_dll_path(dll_path)
+            }
+        }
         None => prepare_latite_dll(state).await,
     }
+}
+
+async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
+    // Create temp directory for custom DLLs
+    let temp_dir = std::env::temp_dir().join("LatiteCustomDLLs");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|_e| "Failed to create DLL directory".to_string())?;
+
+    // Generate a unique filename based on URL hash
+    let hash = format!("{:x}", fxhash::hash64(&url));
+    let temp_dll_path = temp_dir.join(format!("custom_{}.dll", hash));
+
+    // Download the DLL
+    let response = reqwest::get(url)
+        .await
+        .map_err(|_error| "Failed to download DLL".to_string())?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!("Failed to download DLL: HTTP {}", status.as_u16()));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|_error| "Failed to read DLL file".to_string())?;
+
+    std::fs::write(&temp_dll_path, &bytes)
+        .map_err(|_error| "Failed to save DLL file. Please manually end the Minecraft.Windows.exe task in Task Manager and try again.".to_string())?;
+
+    println!("Custom DLL downloaded to {}.", temp_dll_path.display());
+    Ok(temp_dll_path)
 }
 
 async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
@@ -313,36 +374,39 @@ async fn prepare_latite_dll(state: &AppState) -> Result<PathBuf, String> {
 }
 
 fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
-    let dll_path = PathBuf::from(dll_path);
-
-    if !dll_path.exists() {
-        return Err(format!(
-            "The selected DLL does not exist: {}",
-            dll_path.display()
-        ));
+    // Check if it's a URL
+    if dll_path.starts_with("http://") || dll_path.starts_with("https://") {
+        // Validate URL format
+        if let Err(_e) = url::Url::parse(&dll_path) {
+            return Err("Invalid DLL URL format".to_string());
+        }
+        
+        // For URLs, we need to download them asynchronously
+        // This is a blocking function, so we'll handle this in resolve_dll_path instead
+        return Ok(PathBuf::from(dll_path));
     }
 
-    if !dll_path.is_file() {
-        return Err(format!(
-            "The selected path is not a file: {}",
-            dll_path.display()
-        ));
+    let dll_path_buf = PathBuf::from(&dll_path);
+
+    if !dll_path_buf.exists() {
+        return Err("DLL file does not exist".to_string());
     }
 
-    let is_dll = dll_path
+    if !dll_path_buf.is_file() {
+        return Err("DLL path is not a file".to_string());
+    }
+
+    let is_dll = dll_path_buf
         .extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| extension.eq_ignore_ascii_case("dll"));
 
     if !is_dll {
-        return Err(format!(
-            "The selected file is not a DLL: {}",
-            dll_path.display()
-        ));
+        return Err("Selected file is not a DLL".to_string());
     }
 
-    std::fs::canonicalize(&dll_path)
-        .map_err(|error| format!("Failed to resolve DLL path {}: {error}", dll_path.display()))
+    std::fs::canonicalize(&dll_path_buf)
+        .map_err(|_error| "Failed to resolve DLL path".to_string())
 }
 
 fn launch_minecraft() -> Result<(), String> {

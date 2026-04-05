@@ -10,6 +10,10 @@ struct Options {
     rpc_show_time_played: bool,
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
+    latite_nightly: bool,
+    latite_debug: bool,
+    use_custom_dll: bool,
+    custom_dlls: String,
     last_used_version: Option<String>,
 }
 
@@ -36,14 +40,18 @@ impl OptionsStore {
             )
         })?;
 
-        let options = serde_json::from_reader(options_file).map_err(|error| {
-            format!(
-                "Failed to parse options file at {}: {error}",
-                options_path.display()
-            )
-        })?;
-
-        Ok(Self { options })
+        // Try to parse the options file, if it fails due to missing fields, use defaults
+        match serde_json::from_reader(options_file) {
+            Ok(options) => Ok(Self { options }),
+            Err(error) => {
+                eprintln!("Failed to parse options file, using defaults: {error}");
+                // Remove the old file and create a new one with defaults
+                let _ = std::fs::remove_file(&options_path);
+                let store = Self::default();
+                store.save()?;
+                Ok(store)
+            }
+        }
     }
 
     pub fn save(&self) -> Result<(), String> {
@@ -79,6 +87,23 @@ impl OptionsStore {
     pub fn set_last_used_version(&mut self, version: Option<String>) {
         self.options.last_used_version = version;
     }
+
+    pub fn get_string(&self, id: &str) -> Result<String, String> {
+        match id {
+            "custom_dlls" => Ok(self.options.custom_dlls.clone()),
+            _ => Err(format!("Unknown string option: {id}")),
+        }
+    }
+
+    pub fn set_string(&mut self, id: &str, value: String) -> Result<(), String> {
+        match id {
+            "custom_dlls" => {
+                self.options.custom_dlls = value;
+                Ok(())
+            }
+            _ => Err(format!("Unknown string option: {id}")),
+        }
+    }
 }
 
 impl Default for Options {
@@ -90,6 +115,10 @@ impl Default for Options {
             rpc_show_time_played: true,
             misc_hide_on_close: false,
             misc_close_after_injected: false,
+            latite_nightly: false,
+            latite_debug: false,
+            use_custom_dll: false,
+            custom_dlls: String::new(),
             last_used_version: None,
         }
     }
@@ -104,6 +133,9 @@ impl Options {
             "rpc_show_time_played" => Ok(&self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&self.misc_close_after_injected),
+            "latite_nightly" => Ok(&self.latite_nightly),
+            "latite_debug" => Ok(&self.latite_debug),
+            "use_custom_dll" => Ok(&self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
     }
@@ -116,6 +148,9 @@ impl Options {
             "rpc_show_time_played" => Ok(&mut self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&mut self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&mut self.misc_close_after_injected),
+            "latite_nightly" => Ok(&mut self.latite_nightly),
+            "latite_debug" => Ok(&mut self.latite_debug),
+            "use_custom_dll" => Ok(&mut self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
     }

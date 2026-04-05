@@ -54,6 +54,17 @@ impl AppState {
         options.save()
     }
 
+    pub fn get_string_option(&self, id: &str) -> Result<String, String> {
+        let options = self.lock_options()?;
+        options.get_string(id)
+    }
+
+    pub fn set_string_option(&self, id: &str, value: String) -> Result<(), String> {
+        let mut options = self.lock_options()?;
+        options.set_string(id, value)?;
+        options.save()
+    }
+
     fn lock_options(&self) -> Result<MutexGuard<'_, OptionsStore>, String> {
         self.options
             .lock()

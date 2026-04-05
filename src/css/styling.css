@@ -142,7 +142,12 @@ body {
 	font-size: 33px;
 }
 
-.close {
+.closeoptions {
+	display: flex;
+	gap: 13px;
+}
+
+.closeicons {
 	object-fit: cover;
 	object-position: center;
 	width: 48px;
@@ -156,11 +161,11 @@ body {
 	transition: all 0.1s ease-in-out;
 }
 
-.close:hover {
+.closeicons:hover {
 	filter: brightness(0.75);
 }
 
-.close:active {
+.closeicons:active {
 	filter: brightness(0.6);
 }
 
@@ -464,10 +469,9 @@ p {
 }
 
 #discord {
-	aspect-ratio: 1.25;
 	object-fit: cover;
 	object-position: center;
-	width: 45px;
+	width: 40px;
 	cursor: pointer;
 	-webkit-user-select: none;
 	-ms-user-select: none;
@@ -477,10 +481,9 @@ p {
 }
 
 #github {
-	aspect-ratio: 1;
 	object-fit: cover;
 	object-position: center;
-	width: 46px;
+	width: 34px;
 	cursor: pointer;
 	-webkit-user-select: none;
 	-ms-user-select: none;
@@ -513,7 +516,7 @@ p {
 }
 
 #iconbar {
-	gap: 17px;
+	gap: 20px;
 }
 
 #infobar {
@@ -525,7 +528,7 @@ p {
 	font-family: "Segoe UI", sans-serif;
 	padding: 7px 10px;
 	background-color: #8383830e;
-	outline: solid 3px #83838315;
+	outline: solid 3px #8383831c;
 	border-radius: 100px;
 	cursor: pointer;
 	-webkit-user-select: none;
@@ -571,12 +574,23 @@ p {
 	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
-	width: calc(100% - 50px);
+	width: calc(100% - 70px);
 	flex: 1;
 	min-height: 0;
 	gap: 28px;
 	overflow-y: auto;
-	padding-right: 6px;
+	padding-right: 20px;
+	padding-bottom: 60px;
+
+	mask-image: linear-gradient(to bottom,
+			#000000 0%,
+			#000000 85%,
+			transparent 100%);
+
+	-webkit-mask-image: linear-gradient(to bottom,
+			#000000 0%,
+			#000000 80%,
+			rgba(0, 0, 0, 0.295) 100%);
 }
 
 .centersettings h2 {
@@ -599,6 +613,11 @@ p {
 	justify-content: space-between;
 	align-items: center;
 	gap: 16px;
+}
+
+#DLLPathOption.greyed-out {
+	opacity: 0.5;
+	pointer-events: none;
 }
 
 .settingoption p {
@@ -656,6 +675,130 @@ input[type="checkbox"]:checked::after {
 	opacity: 0.6;
 	pointer-events: all;
 }
+
+
+
+#customDllForm {
+	display: inline-flex;
+	flex-direction: row;
+	gap: 12px;
+	align-items: end;
+	margin-right: 7px;
+}
+
+.dllSelector {
+	display: inline-flex;
+	/* gap: 3px; */
+	outline: solid 3px #8383831c;
+	border-radius: 4px;
+	box-shadow: 0 4px 7px #00000042;
+	overflow: hidden;
+}
+
+
+input.path_input[type="text"] {
+	appearance: none;
+	-webkit-appearance: none;
+	height: 24px;
+	width: 250px;
+	background-color: #8383832e;
+	outline: none;
+	border: none;
+	cursor: text;
+	transition: all 0.2s ease;
+	position: relative;
+	/* box-shadow: 0 4px 7px #00000042; */
+	/* flex-shrink: 0; */
+	color: #ffffff;
+	font-size: 11px;
+	padding: 0 0 0 8px;
+	font-weight: 500;
+}
+
+.browseIcon {
+	appearance: none;
+	-webkit-appearance: none;
+	height: 24px;
+	width: 24px;
+	background-color: #83838349;
+	/* outline: solid 3px #8383831c; */
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	position: relative;
+	/* box-shadow: 0 4px 7px #00000042; */
+	/* flex-shrink: 0; */
+	transition: all 0.2s ease;
+}
+
+.browseIcon img {
+	width: 12px;
+	height: 12px;
+	object-fit: cover;
+	object-position: center;
+	-webkit-user-drag: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	opacity: 0.6;
+}
+
+input.submitDLLButton[type="button"] {
+	display: inline-flex;
+	height: 24px;
+	width: 48px;
+	outline: solid 3px #8383831c;
+	background-color: #8383832e;
+	border: none;
+	border-radius: 4px;
+	align-items: center;
+	justify-content: center;
+	color: #ffffff;
+	font-size: 11px;
+	font-weight: 500;
+	/* opacity: 0.7; */
+	cursor: pointer;
+	box-shadow: 0 4px 7px #000000;
+	transition: all 0.2s ease;
+	position: relative;
+	overflow: visible;
+	z-index: 1;
+}
+
+input.submitDLLButton[type="button"]::before {
+	content: "";
+	position: absolute;
+	background: linear-gradient(50deg, #10a9a8 0%, #5f65b9 100%);
+	opacity: 0.7;
+	width: 100%;
+	height: 100%;
+	border-radius: 4px;
+	filter: blur(4px);
+	z-index: 3;
+}
+
+.browseIcon:hover,
+input.path_input[type="text"]:hover {
+	filter: brightness(1.6);
+}
+
+input.submitDLLButton[type="button"]:hover {
+	filter: brightness(1.2);
+}
+
+input.submitDLLButton[type="button"]:active,
+.browseIcon:active,
+input.path_input[type="text"]:active {
+	filter: brightness(0.9);
+}
+
+
+
+
 
 #txtshdw,
 #hdfnt {
@@ -770,7 +913,9 @@ input[type="checkbox"]:checked::after {
 	margin-right: 10px;
 }
 
-.modalBody p, .modalBody ul, .modalBody ul strong {
+.modalBody p,
+.modalBody ul,
+.modalBody ul strong {
 	margin-bottom: 5px;
 	text-wrap: wrap;
 	font-size: 12px;

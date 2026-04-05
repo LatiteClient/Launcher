@@ -18,8 +18,11 @@
 					<img loading="lazy" src="./img/latite.png" class="logoImg" />
 					<div class="name">Latite Client</div>
 				</div>
-				<img loading="lazy" src="./img/close.svg" class="close"
-					onclick="closeWindowAnimation(); closeWindowTimeout();" />
+				<div class="closeoptions">
+					<img loading="lazy" src="./img/minimize.svg" class="closeicons minimize" onclick="minimize();" />
+					<img loading="lazy" src="./img/close.svg" class="closeicons close"
+						onclick="closeWindowAnimation(); closeWindowTimeout();" />
+				</div>
 			</div>
 
 			<div class="center" data-tauri-drag-region>
@@ -77,10 +80,40 @@
 					<img loading="lazy" src="./img/latite.png" class="logoImg" />
 					<div class="name">Settings</div>
 				</div>
-				<img loading="lazy" src="./img/arrowback.svg" class="close" onclick="returnToHome()" />
+				<img loading="lazy" src="./img/arrowback.svg" class="closeicons" onclick="returnToHome()" />
 			</div>
 
 			<div class="centersettings">
+
+				<div class="settingsection">
+					<h2>DLL Options</h2>
+					<div class="settingoption">
+						<p>Use Latite Nightly</p>
+						<input class="options_input" type="checkbox" id="latite_nightly" />
+					</div>
+					<div class="settingoption">
+						<p>Use Latite Debug</p>
+						<input class="options_input" type="checkbox" id="latite_debug" />
+					</div>
+					<div class="settingoption">
+						<p>Use a Custom DLL automatically?</p>
+						<input class="options_input" type="checkbox" id="use_custom_dll" />
+					</div>
+					<div class="settingoption greyed-out" style="margin-top: 5px;" id="DLLPathOption">
+						<p>Custom DLL Link</p>
+						<form id="customDllForm">
+							<div class="dllSelector">
+								<input class="path_input" type="text" id="custom_dlls"
+									placeholder="Enter a path or URL..." />
+								<div class="browseIcon" id="browseButton">
+									<img loading="lazy" src="./img/file.svg" />
+								</div>
+							</div>
+							<input class="submitDLLButton" id="submitDLL" type="button" value="Save">
+						</form>
+					</div>
+				</div>
+
 				<div class="settingsection">
 					<h2>Discord RPC</h2>
 					<div class="settingoption">
@@ -112,6 +145,7 @@
 						<input class="options_input" type="checkbox" id="misc_close_after_injected" />
 					</div>
 				</div>
+
 			</div>
 		</div>
 

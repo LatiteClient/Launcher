@@ -1,11 +1,16 @@
 use std::path::{Path, PathBuf};
 
-pub fn get_launcher_path() -> Result<PathBuf, String> {
+pub fn get_latite_path() -> Result<PathBuf, String> {
     let local_app_data = std::env::var("LOCALAPPDATA")
         .map_err(|error| format!("LOCALAPPDATA is unavailable: {error}"))?;
-    let launcher_path = PathBuf::from(local_app_data)
-        .join("Latite")
-        .join("Launcher");
+    let latite_path = PathBuf::from(local_app_data).join("Latite");
+
+    ensure_directory(&latite_path)
+}
+
+pub fn get_launcher_path() -> Result<PathBuf, String> {
+    let latite_path = get_latite_path()?;
+    let launcher_path = latite_path.join("TauriLauncher");
 
     ensure_directory(&launcher_path)
 }
