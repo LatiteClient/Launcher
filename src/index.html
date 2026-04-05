@@ -172,11 +172,23 @@
             >
               <label class="customDllField" for="customDllPath">
                 <span>Custom DLL path or URL</span>
-                <input
-                  type="text"
-                  id="customDllPath"
-                  placeholder="Enter a DLL path or URL"
-                />
+                <div class="customDllInputRow">
+                  <input
+                    type="text"
+                    id="customDllPath"
+                    placeholder="Enter a DLL path or URL"
+                  />
+                  <button type="button" id="browseCustomDll" class="customDllActionButton">
+                    Browse
+                  </button>
+                  <button
+                    type="button"
+                    id="saveCustomDll"
+                    class="customDllActionButton primary"
+                  >
+                    Save
+                  </button>
+                </div>
               </label>
             </div>
           </div>

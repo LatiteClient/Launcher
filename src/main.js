@@ -3,6 +3,7 @@ import { open as openDialog } from "@tauri-apps/api/dialog";
 import { listen } from "@tauri-apps/api/event";
 import { open as openUrl } from "@tauri-apps/api/shell";
 
+const CUSTOM_DLL_PATH_OPTION_ID = "custom_dll_path";
 const launchButton = document.getElementById("launchButton");
 
 launchButton.addEventListener("click", async () => {
@@ -198,6 +199,8 @@ for (let i = 0; i < items.length; i++) {
 const useCustomDllInput = document.getElementById("use_custom_dll");
 const customDllInputOption = document.getElementById("customDllInputOption");
 const customDllInput = document.getElementById("customDllPath");
+const browseCustomDllButton = document.getElementById("browseCustomDll");
+const saveCustomDllButton = document.getElementById("saveCustomDll");
 
 function setCustomDllFieldEnabled(enabled) {
   if (!customDllInputOption || !customDllInput) {
@@ -206,6 +209,45 @@ function setCustomDllFieldEnabled(enabled) {
 
   customDllInputOption.classList.toggle("is-disabled", !enabled);
   customDllInput.disabled = !enabled;
+  browseCustomDllButton.disabled = !enabled;
+  saveCustomDllButton.disabled = !enabled;
+}
+
+async function loadSavedCustomDllPath() {
+  if (!customDllInput) {
+    return;
+  }
+
+  try {
+    const savedValue = await invoke("get_string_option", {
+      id: CUSTOM_DLL_PATH_OPTION_ID,
+    });
+    customDllInput.value = savedValue;
+  } catch (error) {
+    console.error("Failed to load custom DLL path:", error);
+  }
+}
+
+async function saveCustomDllPath(value) {
+  await invoke("update_string_option", {
+    id: CUSTOM_DLL_PATH_OPTION_ID,
+    value,
+  });
+}
+
+function showCustomDllSavedState() {
+  if (!saveCustomDllButton) {
+    return;
+  }
+
+  const originalLabel = saveCustomDllButton.textContent;
+  saveCustomDllButton.textContent = "Saved";
+  saveCustomDllButton.disabled = true;
+
+  setTimeout(() => {
+    saveCustomDllButton.textContent = originalLabel;
+    saveCustomDllButton.disabled = !useCustomDllInput?.checked;
+  }, 1200);
 }
 
 if (useCustomDllInput) {
@@ -219,6 +261,40 @@ if (useCustomDllInput) {
 
   useCustomDllInput.addEventListener("change", () => {
     setCustomDllFieldEnabled(useCustomDllInput.checked);
+  });
+}
+
+loadSavedCustomDllPath();
+
+if (browseCustomDllButton) {
+  browseCustomDllButton.addEventListener("click", async () => {
+    const selected = await openDialog({
+      title: "Select a DLL to inject",
+      multiple: false,
+      filters: [
+        {
+          name: "DLL File",
+          extensions: ["dll"],
+        },
+      ],
+    });
+
+    if (selected === null || !customDllInput) {
+      return;
+    }
+
+    customDllInput.value = Array.isArray(selected) ? selected[0] : selected;
+  });
+}
+
+if (saveCustomDllButton) {
+  saveCustomDllButton.addEventListener("click", async () => {
+    try {
+      await saveCustomDllPath(customDllInput?.value.trim() ?? "");
+      showCustomDllSavedState();
+    } catch (error) {
+      console.error("Failed to save custom DLL path:", error);
+    }
   });
 }
 

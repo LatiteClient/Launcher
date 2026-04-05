@@ -52,6 +52,16 @@ fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn get_string_option(id: &str, state: State<'_, AppState>) -> Result<String, String> {
+    state.get_string_option(id)
+}
+
+#[tauri::command]
+fn update_string_option(id: &str, value: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.update_string_option(id, value)
+}
+
+#[tauri::command]
 fn get_latite_build(state: State<'_, AppState>) -> Result<BuildKind, String> {
     state.get_latite_build()
 }
@@ -110,6 +120,8 @@ fn main() {
             inject,
             update_option,
             get_option,
+            get_string_option,
+            update_string_option,
             get_latite_build,
             update_latite_build,
             open_folder
