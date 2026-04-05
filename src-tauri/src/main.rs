@@ -113,19 +113,19 @@ fn main() {
     };
 
     tauri::Builder::default()
-    .setup(|app| {
-        let app_version = app.package_info().version.to_string();
-        tauri::async_runtime::spawn(async move {
-            match launcher::check_for_updates(&app_version).await {
-                Ok(_) => {}
-                Err(err) => {
-                    eprintln!("{err}");
-                }
-            };
-        });
+        .setup(|app| {
+            let app_version = app.package_info().version.to_string();
+            tauri::async_runtime::spawn(async move {
+                match launcher::check_for_updates(&app_version).await {
+                    Ok(_) => {}
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
+                };
+            });
 
-        Ok(())
-    })
+            Ok(())
+        })
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             inject,

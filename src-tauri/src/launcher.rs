@@ -186,14 +186,25 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
             status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
             Ok(())
         }
-        ProcessMonitorOutcome::Exited(exit_code) => Err(report_failure(
-            &status,
-            "Failed to inject",
-            format!(
-                "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
-            ),
-            FAILURE_STATUS_TIME,
-        )),
+        ProcessMonitorOutcome::Exited(exit_code)
+            if exit_code != 0 =>
+        {
+            Err(report_failure(
+                &status,
+                "Failed to inject",
+                format!(
+                    "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
+                ),
+                FAILURE_STATUS_TIME,
+            ))
+        }
+        ProcessMonitorOutcome::Exited(exit_code) => {
+            println!(
+                "Process {pid} exited after injection with exit code {exit_code:#x}; treating injection as successful."
+            );
+            status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
+            Ok(())
+        }
     }
 }
 
@@ -464,7 +475,10 @@ async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
 
     let status = response.status();
     if !status.is_success() {
-        return Err(format!("Failed to download DLL from {url}: HTTP {}", status));
+        return Err(format!(
+            "Failed to download DLL from {url}: HTTP {}",
+            status
+        ));
     }
 
     let bytes = response
