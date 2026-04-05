@@ -27,7 +27,6 @@ const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
 const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
 const LAUNCH_FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
 const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(10);
-const POST_INJECTION_MONITOR_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
 pub struct LaunchError {
@@ -133,7 +132,7 @@ impl Drop for StatusAnimation {
 
 enum ProcessMonitorOutcome {
     Running,
-    Exited,
+    Exited(u32),
 }
 
 pub async fn inject(
@@ -160,29 +159,37 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
 
     let injection_started_at = Instant::now();
     let injection_animation = StatusAnimation::start(status.clone(), "Injecting");
-    let injection_result = injector::inject_dll(pid, &dll_path).map_err(LaunchError::from);
+    let injection_result = injector::open_target_process(pid).and_then(|target_process| {
+        injector::inject_dll(&target_process, &dll_path)?;
+        Ok(target_process)
+    });
 
     wait_for_minimum_duration(injection_started_at, INJECTION_MIN_STATUS_TIME);
     drop(injection_animation);
 
-    if let Err(error) = injection_result {
-        return Err(report_failure(
-            &status,
-            "Failed to inject",
-            error.into_message(),
-            FAILURE_STATUS_TIME,
-        ));
-    }
+    let target_process = match injection_result {
+        Ok(target_process) => target_process,
+        Err(error) => {
+            return Err(report_failure(
+                &status,
+                "Failed to inject",
+                error,
+                FAILURE_STATUS_TIME,
+            ));
+        }
+    };
 
-    match monitor_process_after_injection(MC_PROCESS_NAME, &status)? {
+    match monitor_process_after_injection(&target_process, &status)? {
         ProcessMonitorOutcome::Running => {
             status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
             Ok(())
         }
-        ProcessMonitorOutcome::Exited => Err(report_failure(
+        ProcessMonitorOutcome::Exited(exit_code) => Err(report_failure(
             &status,
             "Failed to inject",
-            "Minecraft process closed after DLL injection. The DLL may be incompatible with your Minecraft version.",
+            format!(
+                "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
+            ),
             FAILURE_STATUS_TIME,
         )),
     }
@@ -238,39 +245,39 @@ fn wait_for_minimum_duration(started_at: Instant, minimum_duration: Duration) {
 }
 
 fn monitor_process_after_injection(
-    process_name: &str,
+    target_process: &injector::TargetProcess,
     status: &StatusEmitter,
 ) -> Result<ProcessMonitorOutcome, LaunchError> {
     let _animation: StatusAnimation = StatusAnimation::start(status.clone(), "Finalizing");
-    let monitor_iterations =
-        POST_INJECTION_MONITOR_DURATION.as_millis() / POST_INJECTION_MONITOR_INTERVAL.as_millis();
+    let monitor_started_at = Instant::now();
 
-    for attempt in 1..=monitor_iterations {
-        thread::sleep(POST_INJECTION_MONITOR_INTERVAL);
-        let elapsed_ms = attempt * POST_INJECTION_MONITOR_INTERVAL.as_millis();
-
-        match injector::find_process_id(process_name) {
-            Ok(Some(_)) => println!("Process alive at {elapsed_ms}ms"),
-            Ok(None) => {
-                println!("Process died after {elapsed_ms}ms");
-                return Ok(ProcessMonitorOutcome::Exited);
-            }
-            Err(error) => {
-                return Err(report_failure(
-                    status,
-                    "Failed to verify injection",
-                    format!("Failed to confirm Minecraft stayed open after injection: {error}"),
-                    FAILURE_STATUS_TIME,
-                ));
-            }
+    match injector::wait_for_process_exit(target_process, POST_INJECTION_MONITOR_DURATION) {
+        Ok(injector::ProcessWaitOutcome::Running) => {
+            println!(
+                "Process {} survived {}ms monitoring period",
+                target_process.pid(),
+                POST_INJECTION_MONITOR_DURATION.as_millis()
+            );
+            Ok(ProcessMonitorOutcome::Running)
         }
+        Ok(injector::ProcessWaitOutcome::Exited(exit_code)) => {
+            println!(
+                "Process {} exited after {}ms with exit code {exit_code:#x}",
+                target_process.pid(),
+                monitor_started_at.elapsed().as_millis()
+            );
+            Ok(ProcessMonitorOutcome::Exited(exit_code))
+        }
+        Err(error) => Err(report_failure(
+            status,
+            "Failed to verify injection",
+            format!(
+                "Failed to confirm Minecraft process {} stayed open after injection: {error}",
+                target_process.pid()
+            ),
+            FAILURE_STATUS_TIME,
+        )),
     }
-
-    println!(
-        "Process survived {}ms monitoring period",
-        POST_INJECTION_MONITOR_DURATION.as_millis()
-    );
-    Ok(ProcessMonitorOutcome::Running)
 }
 
 pub async fn check_for_updates(current_version: &str) -> Result<(), String> {

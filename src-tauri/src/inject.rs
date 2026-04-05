@@ -2,9 +2,10 @@ use std::ffi::{c_void, CStr};
 use std::mem::size_of;
 use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
+use std::time::Duration;
 
 use windows::core::s;
-use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED, WAIT_OBJECT_0};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT};
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS,
@@ -14,33 +15,73 @@ use windows::Win32::System::Memory::{
     VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
 };
 use windows::Win32::System::Threading::{
-    CreateRemoteThread, GetExitCodeThread, OpenProcess, WaitForSingleObject, INFINITE,
-    PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
-    PROCESS_VM_WRITE,
+    CreateRemoteThread, GetExitCodeProcess, GetExitCodeThread, OpenProcess, WaitForSingleObject,
+    INFINITE, PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_SYNCHRONIZE,
+    PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
 };
 
 type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
 
-pub fn inject_dll(pid: u32, dll_path: &Path) -> Result<(), String> {
-    unsafe { inject_dll_inner(pid, dll_path) }
+pub struct TargetProcess {
+    pid: u32,
+    handle: OwnedHandle,
+}
+
+impl TargetProcess {
+    pub fn pid(&self) -> u32 {
+        self.pid
+    }
+
+    fn raw(&self) -> HANDLE {
+        self.handle.raw()
+    }
+}
+
+pub enum ProcessWaitOutcome {
+    Running,
+    Exited(u32),
+}
+
+pub fn open_target_process(pid: u32) -> Result<TargetProcess, String> {
+    unsafe { open_target_process_inner(pid) }
+}
+
+pub fn inject_dll(target_process: &TargetProcess, dll_path: &Path) -> Result<(), String> {
+    unsafe { inject_dll_inner(target_process, dll_path) }
+}
+
+pub fn wait_for_process_exit(
+    target_process: &TargetProcess,
+    timeout: Duration,
+) -> Result<ProcessWaitOutcome, String> {
+    unsafe { wait_for_process_exit_inner(target_process, timeout) }
 }
 
 pub fn find_process_id(process_name: &str) -> Result<Option<u32>, String> {
     unsafe { find_process_id_inner(process_name) }
 }
 
-unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
+unsafe fn open_target_process_inner(pid: u32) -> Result<TargetProcess, String> {
     let process_handle = OpenProcess(
         PROCESS_CREATE_THREAD
             | PROCESS_QUERY_INFORMATION
             | PROCESS_VM_OPERATION
             | PROCESS_VM_WRITE
-            | PROCESS_VM_READ,
+            | PROCESS_VM_READ
+            | PROCESS_SYNCHRONIZE,
         false,
         pid,
     )
     .map_err(|error| format!("Failed to open target process {pid}: {error}"))?;
-    let process_handle = OwnedHandle::new(process_handle);
+
+    Ok(TargetProcess {
+        pid,
+        handle: OwnedHandle::new(process_handle),
+    })
+}
+
+unsafe fn inject_dll_inner(target_process: &TargetProcess, dll_path: &Path) -> Result<(), String> {
+    let pid = target_process.pid();
 
     let full_dll_path = std::fs::canonicalize(dll_path)
         .map_err(|error| format!("Failed to resolve DLL path {}: {error}", dll_path.display()))?;
@@ -52,7 +93,7 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
     let dll_path_size = dll_path_wide.len() * size_of::<u16>();
 
     let allocated_memory = VirtualAllocEx(
-        process_handle.raw(),
+        target_process.raw(),
         None,
         dll_path_size,
         MEM_COMMIT | MEM_RESERVE,
@@ -63,10 +104,10 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
         return Err(win32_error("VirtualAllocEx failed"));
     }
 
-    let allocated_memory = RemoteAllocation::new(process_handle.raw(), allocated_memory);
+    let allocated_memory = RemoteAllocation::new(target_process.raw(), allocated_memory);
 
     WriteProcessMemory(
-        process_handle.raw(),
+        target_process.raw(),
         allocated_memory.raw(),
         dll_path_wide.as_ptr().cast(),
         dll_path_size,
@@ -81,7 +122,7 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
     let start_routine: ThreadStartRoutine = std::mem::transmute(load_library);
 
     let remote_thread = CreateRemoteThread(
-        process_handle.raw(),
+        target_process.raw(),
         None,
         0,
         Some(start_routine),
@@ -118,6 +159,35 @@ unsafe fn inject_dll_inner(pid: u32, dll_path: &Path) -> Result<(), String> {
         full_dll_path.display()
     );
     Ok(())
+}
+
+unsafe fn wait_for_process_exit_inner(
+    target_process: &TargetProcess,
+    timeout: Duration,
+) -> Result<ProcessWaitOutcome, String> {
+    let wait_result = WaitForSingleObject(target_process.raw(), duration_to_wait_millis(timeout));
+
+    if wait_result == WAIT_FAILED {
+        return Err(win32_error(
+            "WaitForSingleObject failed while monitoring process",
+        ));
+    }
+
+    if wait_result == WAIT_TIMEOUT {
+        return Ok(ProcessWaitOutcome::Running);
+    }
+
+    if wait_result != WAIT_OBJECT_0 {
+        return Err(format!(
+            "WaitForSingleObject returned an unexpected status while monitoring process: {wait_result:?}"
+        ));
+    }
+
+    let mut process_exit_code: u32 = 0;
+    GetExitCodeProcess(target_process.raw(), &mut process_exit_code)
+        .map_err(|error| format!("Failed to get process exit code: {error}"))?;
+
+    Ok(ProcessWaitOutcome::Exited(process_exit_code))
 }
 
 unsafe fn find_process_id_inner(process_name: &str) -> Result<Option<u32>, String> {
@@ -159,6 +229,10 @@ fn process_name_from_entry(entry: &PROCESSENTRY32) -> String {
 
 fn win32_error(context: &str) -> String {
     format!("{context}: {}", windows::core::Error::from_win32())
+}
+
+fn duration_to_wait_millis(duration: Duration) -> u32 {
+    duration.as_millis().min(u32::MAX as u128) as u32
 }
 
 struct OwnedHandle(HANDLE);
