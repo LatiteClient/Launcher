@@ -6,8 +6,9 @@ use serde::Deserialize;
 use crate::launch_request::BuildKind;
 
 // TODO: Move to main Latite repo instead of using Latite-Releases
-const RELEASE_API_URL: &str =
-    "https://api.github.com/repos/Imrglop/Latite-Releases/releases/latest";
+pub const RELEASE_REPO: &str = "Imrglop/Latite-Releases";
+pub const LAUNCHER_REPO: &str = "LatiteClient/Launcher";
+
 const RELEASE_DLL_DOWNLOAD_URL: &str =
     "https://github.com/Imrglop/Latite-Releases/releases/latest/download/Latite.dll";
 const NIGHTLY_DLL_DOWNLOAD_URL: &str =
@@ -48,9 +49,12 @@ struct GitHubRelease {
     tag_name: String,
 }
 
-pub async fn fetch_latest_release_name() -> Result<String, String> {
+pub async fn fetch_latest_release_name(repo: &str) -> Result<String, String> {
     let response = reqwest::Client::new()
-        .get(RELEASE_API_URL)
+        .get(&format!(
+            "https://api.github.com/repos/{}/releases/latest",
+            repo
+        ))
         .header(USER_AGENT, REQUEST_USER_AGENT)
         .send()
         .await

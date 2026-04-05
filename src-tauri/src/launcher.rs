@@ -273,6 +273,23 @@ fn monitor_process_after_injection(
     Ok(ProcessMonitorOutcome::Running)
 }
 
+pub async fn check_for_updates(current_version: &str) -> Result<(), String> {
+    match release::fetch_latest_release_name(release::LAUNCHER_REPO).await {
+        Ok(latest_version) => {
+            println!("Latest launcher version: {latest_version}, Current launcher version: {current_version}");
+
+            if current_version != latest_version {
+                crate::dialogs::show_info(&format!(
+                    "A new version of the Latite Launcher is available! Latest version: {latest_version}"
+                ));
+            }
+
+            Ok(())
+        }
+        Err(error) => Err(format!("Failed to check for launcher updates: {error}")),
+    }
+}
+
 async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
     let InjectRequest { dll_path, build } = request;
 
@@ -313,7 +330,7 @@ async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<PathBu
 
 async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), String> {
     let previous_version = state.get_last_used_version()?;
-    let latest_version = match release::fetch_latest_release_name().await {
+    let latest_dll_version = match release::fetch_latest_release_name(release::RELEASE_REPO).await {
         Ok(version) => {
             println!("Latest release version: {version}");
             Some(version)
@@ -325,7 +342,7 @@ async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), 
     };
 
     let release_cached = release::has_required_assets(BuildKind::Release, build_path);
-    let has_newer_release = latest_version
+    let has_newer_release = latest_dll_version
         .as_deref()
         .is_some_and(|version| previous_version.as_deref() != Some(version));
     let needs_download = !release_cached || has_newer_release;
@@ -333,7 +350,7 @@ async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), 
     if needs_download {
         release::download_build(BuildKind::Release, build_path).await?;
 
-        if let Some(version) = latest_version {
+        if let Some(version) = latest_dll_version {
             state.set_last_used_version(Some(version))?;
         }
     }
