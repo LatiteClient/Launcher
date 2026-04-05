@@ -13,6 +13,7 @@ struct Options {
     rpc_show_time_played: bool,
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
+    use_custom_dll: bool,
     latite_build: BuildKind,
     last_used_version: Option<String>,
 }
@@ -102,6 +103,7 @@ impl Default for Options {
             rpc_show_time_played: true,
             misc_hide_on_close: false,
             misc_close_after_injected: false,
+            use_custom_dll: false,
             latite_build: BuildKind::Release,
             last_used_version: None,
         }
@@ -117,6 +119,7 @@ impl Options {
             "rpc_show_time_played" => Ok(&self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&self.misc_close_after_injected),
+            "use_custom_dll" => Ok(&self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
     }
@@ -129,6 +132,7 @@ impl Options {
             "rpc_show_time_played" => Ok(&mut self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&mut self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&mut self.misc_close_after_injected),
+            "use_custom_dll" => Ok(&mut self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
     }

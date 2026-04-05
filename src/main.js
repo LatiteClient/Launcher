@@ -143,6 +143,33 @@ for (let i = 0; i < items.length; i++) {
   });
 }
 
+const useCustomDllInput = document.getElementById("use_custom_dll");
+const customDllInputOption = document.getElementById("customDllInputOption");
+const customDllInput = document.getElementById("customDllPath");
+
+function setCustomDllFieldEnabled(enabled) {
+  if (!customDllInputOption || !customDllInput) {
+    return;
+  }
+
+  customDllInputOption.classList.toggle("is-disabled", !enabled);
+  customDllInput.disabled = !enabled;
+}
+
+if (useCustomDllInput) {
+  invoke("get_option", { id: "use_custom_dll" })
+    .then((enabled) => {
+      setCustomDllFieldEnabled(enabled);
+    })
+    .catch((error) => {
+      console.error("Failed to load custom DLL option:", error);
+    });
+
+  useCustomDllInput.addEventListener("change", () => {
+    setCustomDllFieldEnabled(useCustomDllInput.checked);
+  });
+}
+
 const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
 
 invoke("get_latite_build")
