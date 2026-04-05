@@ -26,7 +26,7 @@ const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
 const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
 const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
 const LAUNCH_FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(5);
+const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(10);
 const POST_INJECTION_MONITOR_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
