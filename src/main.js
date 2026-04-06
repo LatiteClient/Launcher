@@ -7,6 +7,7 @@ import {
 import { listen } from "@tauri-apps/api/event";
 import { locale as getSystemLocale } from "@tauri-apps/api/os";
 import { open as openUrl } from "@tauri-apps/api/shell";
+import { readText as readClipboardText } from "@tauri-apps/api/clipboard";
 
 const AUTO_LOCALE = "auto";
 const DEFAULT_LOCALE = "en_US";
@@ -35,6 +36,7 @@ const launchButton = document.getElementById("launchButton");
 const useCustomDllInput = document.getElementById("use_custom_dll");
 const customDllInputOption = document.getElementById("customDllInputOption");
 const customDllInput = document.getElementById("customDllPath");
+const pasteLinkBtn = document.getElementById("pasteLink");
 const browseCustomDllButton = document.getElementById("browseCustomDll");
 const saveCustomDllButton = document.getElementById("saveCustomDll");
 const launcherLanguageSelect = document.getElementById("launcherLanguage");
@@ -226,6 +228,7 @@ function setLauncherLanguageMenuOpen(
 
   launcherLanguageCustomSelect.classList.toggle("is-open", isOpen);
   launcherLanguageTrigger.setAttribute("aria-expanded", String(isOpen));
+  document.querySelector(".centersettings")?.classList.toggle("dropdown-open", isOpen);
 
   if (isOpen && focusSelected) {
     requestAnimationFrame(() => {
@@ -676,6 +679,19 @@ function registerPrimaryEventListeners() {
       showCustomDllSavedState();
     } catch (error) {
       console.error("Failed to save custom DLL path:", error);
+    }
+  });
+
+  pasteLinkBtn?.addEventListener("click", async () => {
+    try {
+      const clipboardText = await readClipboardText();
+      if (clipboardText && customDllInput) {
+        customDllInput.value = clipboardText;
+        await saveCustomDllPath(clipboardText.trim());
+        showCustomDllSavedState();
+      }
+    } catch (error) {
+      console.error("Failed to read clipboard:", error);
     }
   });
 

@@ -21,6 +21,10 @@
         "message": true,
         "open": true
       },
+      "clipboard": {
+        "all": false,
+        "readText": true
+      },
       "window": {
         "all": false,
         "center": false,

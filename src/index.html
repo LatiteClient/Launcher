@@ -1,484 +1,376 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/styling.css" />
-    <title>Latite Client Launcher</title>
-  </head>
 
-  <body class="preventSelect">
-    <div class="launcher">
-      <img loading="lazy" src="./img/background.png" class="background" />
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" href="./css/styling.css" />
+	<title>Latite Client Launcher</title>
+</head>
 
-      <div class="page home">
-        <div class="header" data-tauri-drag-region>
-          <div class="brand">
-            <img loading="lazy" src="./img/latite.png" class="logoImg" />
-            <div class="name">Latite Client</div>
-          </div>
-          <div class="windowControls">
-            <img
-              loading="lazy"
-              src="./img/minimize.svg"
-              class="windowControl"
-              onclick="minimizeWindow()"
-            />
-            <img
-              loading="lazy"
-              src="./img/close.svg"
-              class="windowControl"
-              onclick="
+<body class="preventSelect">
+	<div class="launcher">
+		<img loading="lazy" src="./img/background.png" class="background" />
+
+		<div class="page home">
+			<div class="header" data-tauri-drag-region>
+				<div class="brand">
+					<img loading="lazy" src="./img/latite.png" class="logoImg" />
+					<div class="name">Latite Client</div>
+				</div>
+				<div class="windowControls">
+					<img loading="lazy" src="./img/minimize.svg" class="windowControl" onclick="minimizeWindow()" />
+					<img loading="lazy" src="./img/close.svg" class="windowControl" onclick="
                 closeWindowAnimation();
                 closeWindowTimeout();
-              "
-            />
-          </div>
-        </div>
+              " />
+				</div>
+			</div>
 
-        <div class="center" data-tauri-drag-region>
-          <div id="launchButton">
-            <div id="centerLaunch">
-              <div id="launchText" data-i18n="launcher.home.launch.name">
-                LAUNCH
-              </div>
-              <div id="statusContainer">
-                <div
-                  id="launchSubtext"
-                  data-i18n="launcher.status.idle.name"
-                  data-status-key="launcher.status.idle.name"
-                >
-                  Status: Idle
-                </div>
-              </div>
-            </div>
-          </div>
+			<div class="center" data-tauri-drag-region>
+				<div id="launchButton">
+					<div id="centerLaunch">
+						<div id="launchText" data-i18n="launcher.home.launch.name">
+							LAUNCH
+						</div>
+						<div id="statusContainer">
+							<div id="launchSubtext" data-i18n="launcher.status.idle.name"
+								data-status-key="launcher.status.idle.name">
+								Status: Idle
+							</div>
+						</div>
+					</div>
+				</div>
 
-          <p class="preventSelect" data-i18n="launcher.home.launchHint.name">
-            Right click the launch button to inject custom DLLs
-          </p>
-        </div>
+				<p class="preventSelect" data-i18n="launcher.home.launchHint.name">
+					Right click the launch button to inject custom DLLs
+				</p>
+			</div>
 
-        <div id="misc">
-          <div id="infobar">
-            <div
-              class="info"
-              id="changelog"
-              data-i18n="launcher.home.changelog.name"
-            >
-              Changelog
-            </div>
-            <div
-              class="info"
-              id="credits"
-              data-i18n="launcher.home.credits.name"
-            >
-              Credits
-            </div>
-            <div
-              class="info"
-              id="openFolder"
-              data-i18n="launcher.home.openFolder.name"
-            >
-              Open Latite Folder
-            </div>
-          </div>
+			<div id="misc">
+				<div id="infobar">
+					<div class="info" id="changelog" data-i18n="launcher.home.changelog.name">
+						Changelog
+					</div>
+					<div class="info" id="credits" data-i18n="launcher.home.credits.name">
+						Credits
+					</div>
+					<div class="info" id="openFolder" data-i18n="launcher.home.openFolder.name">
+						Open Latite Folder
+					</div>
+				</div>
 
-          <div id="iconbar">
-            <img loading="lazy" src="./img/github.svg" id="github" />
-            <img loading="lazy" src="./img/discord.svg" id="discord" />
-            <img
-              loading="lazy"
-              src="./img/settings.svg"
-              id="settings"
-              onclick="openSettings()"
-            />
-          </div>
-        </div>
-      </div>
+				<div id="iconbar">
+					<img loading="lazy" src="./img/github.svg" id="github" />
+					<img loading="lazy" src="./img/discord.svg" id="discord" />
+					<img loading="lazy" src="./img/settings.svg" id="settings" onclick="openSettings()" />
+				</div>
+			</div>
+		</div>
 
-      <div class="page settings">
-        <div class="settingsheader" data-tauri-drag-region>
-          <div class="brand">
-            <img loading="lazy" src="./img/latite.png" class="logoImg" />
-            <div class="name" data-i18n="launcher.settings.title.name">
-              Settings
-            </div>
-          </div>
-          <img
-            loading="lazy"
-            src="./img/arrowback.svg"
-            class="windowControl"
-            onclick="returnToHome()"
-          />
-        </div>
+		<div class="page settings">
+			<div class="settingsheader" data-tauri-drag-region>
+				<div class="brand">
+					<img loading="lazy" src="./img/latite.png" class="logoImg" />
+					<div class="name" data-i18n="launcher.settings.title.name">
+						Settings
+					</div>
+				</div>
+				<img loading="lazy" src="./img/arrowback.svg" class="windowControl" onclick="returnToHome()" />
+			</div>
 
-        <div class="centersettings">
-          <div class="settingsection">
-            <h2 data-i18n="launcher.settings.launcherLanguageSection.name">
-              Launcher Language
-            </h2>
-            <div class="settingoption settingoptionBlock">
-              <label class="settingField" for="launcherLanguage">
-                <span
-                  class="settingFieldLabel"
-                  data-i18n="launcher.settings.launcherLanguage.name"
-                >
-                  Language
-                </span>
-                <span
-                  class="settingFieldDescription"
-                  data-i18n="launcher.settings.launcherLanguage.desc"
-                >
-                  Use System Default to follow your operating system language
-                  automatically.
-                </span>
-                <select id="launcherLanguage" class="settingSelect"></select>
-              </label>
-            </div>
-          </div>
+			<div class="centersettings">
+				<div class="settingsection" id="languageSection">
+					<h2 data-i18n="launcher.settings.launcherLanguageSection.name">
+						Launcher Language
+					</h2>
+					<div class="settingoption settingoptionBlock">
+						<label class="settingField" for="launcherLanguage">
+							<!-- <span class="settingFieldLabel" data-i18n="launcher.settings.launcherLanguage.name">
+								Language
+							</span> -->
+							<span class="settingFieldDescription" data-i18n="launcher.settings.launcherLanguage.desc">
+								Use System Default to follow your operating system language
+								automatically.
+							</span>
+							<select id="launcherLanguage" style="display: none;"></select>
+							<div id="launcherLanguageCustomSelect" class="customSelectContainer">
+								<button type="button" id="launcherLanguageTrigger"
+									class="settingSelect customSelectTrigger">
+									<span id="launcherLanguageValue"></span>
+									<svg viewBox="0 0 24 24" class="customSelectArrow">
+										<polyline points="6 9 12 15 18 9"></polyline>
+									</svg>
+								</button>
+								<div id="launcherLanguageOptions" class="customSelectMenu"></div>
+							</div>
+						</label>
+					</div>
+				</div>
 
-          <div class="settingsection">
-            <h2 data-i18n="launcher.settings.latiteBuildSection.name">
-              Latite Build
-            </h2>
-            <div class="latiteBuildOptions">
-              <label class="latiteBuildChoice">
-                <input
-                  type="radio"
-                  name="latite_build"
-                  value="release"
-                  class="latite_build_input"
-                />
-                <span class="latiteBuildCard">
-                  <span
-                    class="latiteBuildTitle"
-                    data-i18n="launcher.build.release.name"
-                  >
-                    Latite Release
-                  </span>
-                  <span
-                    class="latiteBuildDescription"
-                    data-i18n="launcher.build.release.desc"
-                  >
-                    Stable, default build of Latite Client
-                  </span>
-                </span>
-              </label>
+				<div class="settingsection">
+					<h2 data-i18n="launcher.settings.latiteBuildSection.name">
+						Latite Build
+					</h2>
+					<div class="latiteBuildOptions">
+						<label class="latiteBuildChoice">
+							<input type="radio" name="latite_build" value="release" class="latite_build_input" />
+							<span class="latiteBuildCard">
+								<span class="latiteBuildTitle" data-i18n="launcher.build.release.name">
+									Latite Release
+								</span>
+								<span class="latiteBuildDescription" data-i18n="launcher.build.release.desc">
+									Stable, default build of Latite Client
+								</span>
+							</span>
+						</label>
 
-              <label class="latiteBuildChoice">
-                <input
-                  type="radio"
-                  name="latite_build"
-                  value="nightly"
-                  class="latite_build_input"
-                />
-                <span class="latiteBuildCard">
-                  <span
-                    class="latiteBuildTitle"
-                    data-i18n="launcher.build.nightly.name"
-                  >
-                    Latite Nightly
-                  </span>
-                  <span
-                    class="latiteBuildDescription"
-                    data-i18n="launcher.build.nightly.desc"
-                  >
-                    Automated, experimental builds of Latite Client containing
-                    the latest changes
-                  </span>
-                  <p class="latiteBuildDescription latiteBuildWarning">
-                    <strong data-i18n="launcher.build.nightlyWarning.name">
-                      These builds have a higher chance of containing bugs or
-                      crashes.
-                    </strong>
-                  </p>
-                </span>
-              </label>
+						<label class="latiteBuildChoice">
+							<input type="radio" name="latite_build" value="nightly" class="latite_build_input" />
+							<span class="latiteBuildCard">
+								<span class="latiteBuildTitle" data-i18n="launcher.build.nightly.name">
+									Latite Nightly
+								</span>
+								<span class="latiteBuildDescription" data-i18n="launcher.build.nightly.desc">
+									Automated, experimental builds of Latite Client containing
+									the latest changes
+								</span>
+								<p class="latiteBuildDescription latiteBuildWarning">
+									<strong data-i18n="launcher.build.nightlyWarning.name">
+										These builds have a higher chance of containing bugs or
+										crashes.
+									</strong>
+								</p>
+							</span>
+						</label>
 
-              <label class="latiteBuildChoice">
-                <input
-                  type="radio"
-                  name="latite_build"
-                  value="debug"
-                  class="latite_build_input"
-                />
-                <span class="latiteBuildCard">
-                  <span
-                    class="latiteBuildTitle"
-                    data-i18n="launcher.build.debug.name"
-                  >
-                    Latite Debug
-                  </span>
-                  <span
-                    class="latiteBuildDescription"
-                    data-i18n="launcher.build.debug.desc"
-                  >
-                    Automated, experimental builds of Latite Client meant for
-                    detailed bug reports
-                  </span>
-                  <p class="latiteBuildDescription latiteBuildWarning">
-                    <strong data-i18n="launcher.build.debugWarning.name">
-                      These builds will run slower than Latite Release or
-                      Nightly.
-                    </strong>
-                  </p>
-                </span>
-              </label>
-            </div>
-          </div>
+						<label class="latiteBuildChoice">
+							<input type="radio" name="latite_build" value="debug" class="latite_build_input" />
+							<span class="latiteBuildCard">
+								<span class="latiteBuildTitle" data-i18n="launcher.build.debug.name">
+									Latite Debug
+								</span>
+								<span class="latiteBuildDescription" data-i18n="launcher.build.debug.desc">
+									Automated, experimental builds of Latite Client meant for
+									detailed bug reports
+								</span>
+								<p class="latiteBuildDescription latiteBuildWarning">
+									<strong data-i18n="launcher.build.debugWarning.name">
+										These builds will run slower than Latite Release or
+										Nightly.
+									</strong>
+								</p>
+							</span>
+						</label>
+					</div>
+				</div>
 
-          <div class="settingsection">
-            <h2 data-i18n="launcher.settings.customDllSection.name">
-              Custom DLL
-            </h2>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.useCustomDll.name">
-                Use a custom DLL automatically
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="use_custom_dll"
-              />
-            </div>
-            <div
-              class="settingoption customDllInputOption is-disabled"
-              id="customDllInputOption"
-            >
-              <label class="settingField customDllField" for="customDllPath">
-                <span
-                  class="settingFieldLabel"
-                  data-i18n="launcher.settings.customDllPath.name"
-                >
-                  Custom DLL path or URL
-                </span>
-                <div class="customDllInputRow">
-                  <input
-                    type="text"
-                    id="customDllPath"
-                    placeholder="Enter a DLL path or URL"
-                    data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name"
-                  />
-                  <button
-                    type="button"
-                    id="browseCustomDll"
-                    class="customDllActionButton"
-                    data-i18n="launcher.settings.customDllBrowse.name"
-                  >
-                    Browse
-                  </button>
-                  <button
-                    type="button"
-                    id="saveCustomDll"
-                    class="customDllActionButton primary"
-                    data-i18n="launcher.settings.customDllSave.name"
-                  >
-                    Save
-                  </button>
-                </div>
-              </label>
-            </div>
-          </div>
+				<div class="settingsection">
+					<h2 data-i18n="launcher.settings.customDllSection.name">
+						Custom DLL
+					</h2>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.useCustomDll.name">
+							Use a custom DLL automatically
+						</p>
+						<input class="options_input" type="checkbox" id="use_custom_dll" />
+					</div>
+					<div class="settingoption customDllInputOption is-disabled" id="customDllInputOption">
+						<label class="settingField customDllField" for="customDllPath">
+							<!-- <span class="settingFieldLabel" data-i18n="launcher.settings.customDllPath.name">
+								Custom DLL path or URL
+							</span> -->
+							<div class="customDllInputRow">
+								<label class="customDLLPathFieldContainer">
+									<div class="customDllInput">
+										<input type="text" id="customDllPath" placeholder="Enter a DLL path or URL"
+											data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name" />
+									</div>
+									<div class="pasteBtn" id="pasteLink">
+										<img src="./img/clipboard-solid-full.svg">
+										<p class="pasteBtnText">Paste</p>
+									</div>
+								</label>
+								<button type="button" id="browseCustomDll" class="customDllActionButton"
+									data-i18n="launcher.settings.customDllBrowse.name">
+									Browse
+								</button>
+								<button type="button" id="saveCustomDll" class="customDllActionButton primary"
+									data-i18n="launcher.settings.customDllSave.name">
+									Save
+								</button>
+							</div>
+						</label>
+					</div>
+				</div>
 
-          <div class="settingsection">
-            <h2 data-i18n="launcher.settings.discordRpcSection.name">
-              Discord RPC
-            </h2>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.rpcEnabled.name">
-                Discord Rich Presence
-              </p>
-              <input class="options_input" type="checkbox" id="rpc_enabled" />
-            </div>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.rpcShowServer.name">
-                Show server in RPC
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="rpc_show_server"
-              />
-            </div>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.rpcShowMinecraftVersion.name">
-                Show Minecraft version in RPC
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="rpc_show_mc_version"
-              />
-            </div>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.rpcShowTimePlayed.name">
-                Show time played in RPC
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="rpc_show_time_played"
-              />
-            </div>
-          </div>
+				<div class="settingsection">
+					<h2 data-i18n="launcher.settings.discordRpcSection.name">
+						Discord RPC
+					</h2>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.rpcEnabled.name">
+							Discord Rich Presence
+						</p>
+						<input class="options_input" type="checkbox" id="rpc_enabled" />
+					</div>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.rpcShowServer.name">
+							Show server in RPC
+						</p>
+						<input class="options_input" type="checkbox" id="rpc_show_server" />
+					</div>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.rpcShowMinecraftVersion.name">
+							Show Minecraft version in RPC
+						</p>
+						<input class="options_input" type="checkbox" id="rpc_show_mc_version" />
+					</div>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.rpcShowTimePlayed.name">
+							Show time played in RPC
+						</p>
+						<input class="options_input" type="checkbox" id="rpc_show_time_played" />
+					</div>
+				</div>
 
-          <div class="settingsection">
-            <h2 data-i18n="launcher.settings.miscSection.name">
-              Miscellaneous
-            </h2>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.miscHideOnClose.name">
-                Hide to system tray on close
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="misc_hide_on_close"
-              />
-            </div>
-            <div class="settingoption">
-              <p data-i18n="launcher.settings.miscCloseAfterInjected.name">
-                Close after injected
-              </p>
-              <input
-                class="options_input"
-                type="checkbox"
-                id="misc_close_after_injected"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+				<div class="settingsection">
+					<h2 data-i18n="launcher.settings.miscSection.name">
+						Miscellaneous
+					</h2>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.miscHideOnClose.name">
+							Hide to system tray on close
+						</p>
+						<input class="options_input" type="checkbox" id="misc_hide_on_close" />
+					</div>
+					<div class="settingoption">
+						<p data-i18n="launcher.settings.miscCloseAfterInjected.name">
+							Close after injected
+						</p>
+						<input class="options_input" type="checkbox" id="misc_close_after_injected" />
+					</div>
+				</div>
+			</div>
+		</div>
 
-      <div id="creditsModal" class="modal hidden">
-        <div class="modalOverlay"></div>
-        <div class="modalContent">
-          <div class="modalHeader">
-            <h2 data-i18n="launcher.credits.title.name">Credits</h2>
-            <img
-              src="./img/close.svg"
-              class="modalClose"
-              onclick="closeCreditsModal()"
-            />
-          </div>
-          <div class="modalBody">
-            <div class="one">
-              <p>
-                <strong data-i18n="launcher.credits.developers.name"
-                  >Developers</strong
-                >
-              </p>
-              <ul>
-                <li>
-                  <strong>JayRSky:</strong>
-                  <span data-i18n="launcher.credits.jayrskyRole.name"
-                    >Lead Client Dev</span
-                  >
-                </li>
-                <li>
-                  <strong>Plextora:</strong>
-                  <span data-i18n="launcher.credits.plextoraRole.name"
-                    >Client/Launcher Dev</span
-                  >
-                </li>
-                <li>
-                  <strong>MarioSQ:</strong>
-                  <span data-i18n="launcher.credits.mariosqRole.name"
-                    >Contributing Client Dev</span
-                  >
-                </li>
-                <li>
-                  <strong>CreativeMC:</strong>
-                  <span data-i18n="launcher.credits.creativemcRole.name"
-                    >Website/Launcher Dev</span
-                  >
-                </li>
-              </ul>
-            </div>
-            <div class="two">
-              <p>
-                <strong data-i18n="launcher.credits.contributors.name"
-                  >Contributors</strong
-                >
-              </p>
-              <p data-i18n="launcher.credits.thanks.name">
-                Special thanks to all contributors who have helped improve this
-                project.
-              </p>
-              <ul>
-                <li><strong>phase (phasephasephase)</strong></li>
-                <li><strong>soppy (soupier)</strong></li>
-                <li><strong>rice (rice.exe_)</strong></li>
-                <li><strong>vastrakai</strong></li>
-                <li><strong>Distant (d1s.tie_)</strong></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+		<div id="creditsModal" class="modal hidden">
+			<div class="modalOverlay"></div>
+			<div class="modalContent">
+				<div class="modalHeader">
+					<h2 data-i18n="launcher.credits.title.name">Credits</h2>
+					<img src="./img/close.svg" class="modalClose" onclick="closeCreditsModal()" />
+				</div>
+				<div class="modalBody">
+					<div class="one">
+						<p>
+							<strong data-i18n="launcher.credits.developers.name">Developers</strong>
+						</p>
+						<ul>
+							<li>
+								<strong>JayRSky:</strong>
+								<span data-i18n="launcher.credits.jayrskyRole.name">Lead Client Dev</span>
+							</li>
+							<li>
+								<strong>Plextora:</strong>
+								<span data-i18n="launcher.credits.plextoraRole.name">Client/Launcher Dev</span>
+							</li>
+							<li>
+								<strong>MarioSQ:</strong>
+								<span data-i18n="launcher.credits.mariosqRole.name">Contributing Client Dev</span>
+							</li>
+							<li>
+								<strong>CreativeMC:</strong>
+								<span data-i18n="launcher.credits.creativemcRole.name">Website/Launcher Dev</span>
+							</li>
+						</ul>
+					</div>
+					<div class="two">
+						<p>
+							<strong data-i18n="launcher.credits.contributors.name">Contributors</strong>
+						</p>
+						<p data-i18n="launcher.credits.thanks.name">
+							Special thanks to all contributors who have helped improve this
+							project.
+						</p>
+						<ul>
+							<li><strong>phase (phasephasephase)</strong></li>
+							<li><strong>soppy (soupier)</strong></li>
+							<li><strong>rice (rice.exe_)</strong></li>
+							<li><strong>vastrakai</strong></li>
+							<li><strong>Distant (d1s.tie_)</strong></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <script src="./main.js" type="module"></script>
-    <script>
-      function openSettings() {
-        const homePage = document.querySelector(".page.home");
-        const settingsPage = document.querySelector(".page.settings");
+	<script src="./main.js" type="module"></script>
+	<script>
+		function openSettings() {
+			const homePage = document.querySelector(".page.home");
+			const background = document.querySelector(".background");
+			const settingsPage = document.querySelector(".page.settings");
 
-        homePage.classList.add("hidden");
-        settingsPage.classList.add("active");
-      }
+			homePage.classList.add("hidden");
+			background.classList.add("hidden");
+			settingsPage.classList.add("active");
+		}
 
-      function returnToHome() {
-        const homePage = document.querySelector(".page.home");
-        const settingsPage = document.querySelector(".page.settings");
+		function returnToHome() {
+			const homePage = document.querySelector(".page.home");
+			const background = document.querySelector(".background");
+			const settingsPage = document.querySelector(".page.settings");
 
-        settingsPage.classList.remove("active");
-        homePage.classList.remove("hidden");
-      }
+			settingsPage.classList.remove("active");
+			background.classList.remove("hidden");
+			homePage.classList.remove("hidden");
+		}
 
-      function closeWindowAnimation() {
-        const launcher = document.querySelector(".launcher");
-        launcher.classList.add("launcherCloseAnimation");
-      }
+		function closeWindowAnimation() {
+			const launcher = document.querySelector(".launcher");
+			launcher.classList.add("launcherCloseAnimation");
+		}
 
-      let timeout;
+		let timeout;
 
-      function closeWindowTimeout() {
-        timeout = setTimeout(closeWindow, 300);
-      }
+		function closeWindowTimeout() {
+			timeout = setTimeout(closeWindow, 300);
+		}
 
-      function closeWindow() {
-        window.close();
-      }
+		function closeWindow() {
+			window.close();
+		}
 
-      function openCreditsModal() {
-        const modal = document.getElementById("creditsModal");
-        modal.classList.remove("hidden");
-      }
+		function openCreditsModal() {
+			const modal = document.getElementById("creditsModal");
+			modal.classList.remove("hidden");
+		}
 
-      function closeCreditsModal() {
-        const modal = document.getElementById("creditsModal");
-        modal.classList.add("hidden");
-      }
+		function closeCreditsModal() {
+			const modal = document.getElementById("creditsModal");
+			modal.classList.add("hidden");
+		}
 
-      document
-        .getElementById("credits")
-        .addEventListener("click", openCreditsModal);
+		document
+			.getElementById("credits")
+			.addEventListener("click", openCreditsModal);
 
-      document
-        .querySelector(".modalOverlay")
-        .addEventListener("click", closeCreditsModal);
+		document
+			.querySelector(".modalOverlay")
+			.addEventListener("click", closeCreditsModal);
 
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          closeCreditsModal();
-        }
-      });
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") {
+				closeCreditsModal();
+			}
+		});
 
-      document.addEventListener("contextmenu", (event) =>
-        event.preventDefault(),
-      );
-    </script>
-  </body>
+		document.addEventListener("contextmenu", (event) =>
+			event.preventDefault(),
+		);
+	</script>
+</body>
+
 </html>
