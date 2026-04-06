@@ -11,7 +11,7 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "clipboard-read-text", "window-start-dragging", "shell-open", "dialog-open", "dialog-message", "os-all" ] }
+tauri = { version = "1.5", features = [ "clipboard-read-text", "window-start-dragging", "shell-open", "dialog-open", "dialog-message", "os-all", "system-tray" ] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 windows = { version = "0.61.0", features = ["Win32_Foundation", "Win32_System", "Win32_System_LibraryLoader", "Win32_System_Threading",

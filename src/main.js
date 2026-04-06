@@ -11,6 +11,7 @@ import { readText as readClipboardText } from "@tauri-apps/api/clipboard";
 
 const AUTO_LOCALE = "auto";
 const DEFAULT_LOCALE = "en_US";
+const CLOSE_ANIMATION_DURATION_MS = 300;
 const CUSTOM_DLL_PATH_OPTION_ID = "custom_dll_path";
 const LAUNCHER_LANGUAGE_OPTION_ID = "launcher_language";
 const STATUS_EVENT = "inject_status";
@@ -52,6 +53,7 @@ const changelogLink = document.getElementById("changelog");
 const githubLink = document.getElementById("github");
 const discordLink = document.getElementById("discord");
 const openFolderButton = document.getElementById("openFolder");
+const launcherContainer = document.querySelector(".launcher");
 const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
 
 let currentLocalePreference = AUTO_LOCALE;
@@ -61,6 +63,8 @@ let statusUpdateInProgress = false;
 let pendingStatusUpdate = null;
 let isShowingCustomDllSavedState = false;
 let customDllSavedStateTimeout = null;
+let closeWindowTimer = null;
+let isCloseWindowInProgress = false;
 
 function buildLocaleRegistry(modules) {
   const registry = {};
@@ -209,15 +213,11 @@ function focusLauncherLanguageOption(index) {
     return;
   }
 
-  const wrappedIndex =
-    (index + optionButtons.length) % optionButtons.length;
+  const wrappedIndex = (index + optionButtons.length) % optionButtons.length;
   optionButtons[wrappedIndex]?.focus();
 }
 
-function setLauncherLanguageMenuOpen(
-  isOpen,
-  { focusSelected = false } = {},
-) {
+function setLauncherLanguageMenuOpen(isOpen, { focusSelected = false } = {}) {
   if (
     !launcherLanguageCustomSelect ||
     !launcherLanguageTrigger ||
@@ -228,7 +228,9 @@ function setLauncherLanguageMenuOpen(
 
   launcherLanguageCustomSelect.classList.toggle("is-open", isOpen);
   launcherLanguageTrigger.setAttribute("aria-expanded", String(isOpen));
-  document.querySelector(".centersettings")?.classList.toggle("dropdown-open", isOpen);
+  document
+    .querySelector(".centersettings")
+    ?.classList.toggle("dropdown-open", isOpen);
 
   if (isOpen && focusSelected) {
     requestAnimationFrame(() => {
@@ -260,12 +262,14 @@ function syncLauncherLanguageUi(selectedValue = currentLocalePreference) {
     optionButton.setAttribute("aria-selected", String(isSelected));
 
     if (isSelected) {
-      selectedLabel = optionButton.dataset.label ?? optionButton.textContent ?? "";
+      selectedLabel =
+        optionButton.dataset.label ?? optionButton.textContent ?? "";
     }
   });
 
   if (!selectedLabel && launcherLanguageSelect) {
-    selectedLabel = launcherLanguageSelect.selectedOptions[0]?.textContent ?? "";
+    selectedLabel =
+      launcherLanguageSelect.selectedOptions[0]?.textContent ?? "";
   }
 
   if (launcherLanguageValue) {
@@ -936,6 +940,39 @@ function minimizeWindow() {
   });
 }
 
+function resetCloseWindowAnimationState() {
+  if (closeWindowTimer) {
+    clearTimeout(closeWindowTimer);
+    closeWindowTimer = null;
+  }
+
+  launcherContainer?.classList.remove("launcherCloseAnimation");
+  isCloseWindowInProgress = false;
+}
+
+function startCloseWindowAnimation() {
+  launcherContainer?.classList.add("launcherCloseAnimation");
+}
+
+function requestCloseWindow() {
+  if (isCloseWindowInProgress) {
+    return;
+  }
+
+  isCloseWindowInProgress = true;
+  startCloseWindowAnimation();
+
+  closeWindowTimer = setTimeout(async () => {
+    try {
+      await invoke("close_window");
+    } catch (error) {
+      console.error("Failed to close window:", error);
+    } finally {
+      resetCloseWindowAnimationState();
+    }
+  }, CLOSE_ANIMATION_DURATION_MS);
+}
+
 async function initializeApp() {
   await initializeLocalization();
   await registerTauriListeners();
@@ -955,3 +992,4 @@ initializeApp().catch((error) => {
 });
 
 window.minimizeWindow = minimizeWindow;
+window.requestCloseWindow = requestCloseWindow;

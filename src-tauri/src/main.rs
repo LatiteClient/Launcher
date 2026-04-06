@@ -13,7 +13,14 @@ mod ui;
 
 use app_state::AppState;
 use launch_request::{BuildKind, InjectRequest};
-use tauri::{Manager, State};
+use tauri::{
+    CustomMenuItem, Manager, State, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+};
+
+const MAIN_WINDOW_LABEL: &str = "main";
+const TRAY_ID: &str = "launcher-tray";
+const TRAY_SHOW_MENU_ITEM_ID: &str = "tray-show";
+const TRAY_EXIT_MENU_ITEM_ID: &str = "tray-exit";
 
 #[tauri::command]
 async fn inject(
@@ -80,13 +87,16 @@ fn update_latite_build(build: BuildKind, state: State<'_, AppState>) -> Result<(
 
 #[tauri::command]
 fn minimize_window(app_handle: tauri::AppHandle) -> Result<(), String> {
-    let window = app_handle
-        .get_window("main")
-        .ok_or_else(|| "Main window is unavailable.".to_string())?;
+    let window = get_main_window(&app_handle)?;
 
     window
         .minimize()
         .map_err(|error| format!("Failed to minimize window: {error}"))
+}
+
+#[tauri::command]
+fn close_window(app_handle: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    close_or_hide_main_window(&app_handle, state.inner())
 }
 
 #[tauri::command]
@@ -108,6 +118,117 @@ fn open_folder() -> Result<(), String> {
     Ok(())
 }
 
+fn get_main_window(app_handle: &tauri::AppHandle) -> Result<tauri::Window, String> {
+    app_handle
+        .get_window(MAIN_WINDOW_LABEL)
+        .ok_or_else(|| "Main window is unavailable.".to_string())
+}
+
+fn close_or_hide_main_window(
+    app_handle: &tauri::AppHandle,
+    state: &AppState,
+) -> Result<(), String> {
+    if state.get_bool_option("misc_hide_on_close")? {
+        hide_main_window_to_tray(app_handle, state)
+    } else {
+        app_handle.exit(0);
+        Ok(())
+    }
+}
+
+fn hide_main_window_to_tray(app_handle: &tauri::AppHandle, state: &AppState) -> Result<(), String> {
+    ensure_tray(app_handle, state)?;
+    let window = get_main_window(app_handle)?;
+    window
+        .hide()
+        .map_err(|error| format!("Failed to hide window to tray: {error}"))
+}
+
+fn restore_main_window(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let window = get_main_window(app_handle)?;
+
+    window
+        .show()
+        .map_err(|error| format!("Failed to show launcher window: {error}"))?;
+    window
+        .unminimize()
+        .map_err(|error| format!("Failed to restore launcher window: {error}"))?;
+    window
+        .set_focus()
+        .map_err(|error| format!("Failed to focus launcher window: {error}"))?;
+
+    let state = app_handle.state::<AppState>();
+
+    if state.is_tray_icon_visible() {
+        if let Some(tray_handle) = app_handle.tray_handle_by_id(TRAY_ID) {
+            tray_handle
+                .destroy()
+                .map_err(|error| format!("Failed to remove system tray icon: {error}"))?;
+        }
+
+        state.set_tray_icon_visible(false);
+    }
+
+    Ok(())
+}
+
+fn schedule_restore_main_window(app_handle: &tauri::AppHandle) {
+    let app_handle = app_handle.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Err(error) = restore_main_window(&app_handle) {
+            dialogs::show_error(&error);
+        }
+    });
+}
+
+fn ensure_tray(app_handle: &tauri::AppHandle, state: &AppState) -> Result<(), String> {
+    if state.is_tray_icon_visible() {
+        return Ok(());
+    }
+
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(CustomMenuItem::new(
+            TRAY_SHOW_MENU_ITEM_ID.to_string(),
+            "Show Launcher",
+        ))
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new(
+            TRAY_EXIT_MENU_ITEM_ID.to_string(),
+            "Exit",
+        ));
+
+    let tray_app_handle = app_handle.clone();
+
+    SystemTray::new()
+        .with_id(TRAY_ID)
+        .with_tooltip("Latite Client Launcher")
+        .with_menu(tray_menu)
+        .on_event(move |event| {
+            handle_system_tray_event(&tray_app_handle, event);
+        })
+        .build(app_handle)
+        .map(|_| {
+            state.set_tray_icon_visible(true);
+        })
+        .map_err(|error| format!("Failed to create system tray icon: {error}"))
+}
+
+fn handle_system_tray_event(app_handle: &tauri::AppHandle, event: SystemTrayEvent) {
+    match event {
+        SystemTrayEvent::MenuItemClick { id, .. } if id == TRAY_SHOW_MENU_ITEM_ID => {
+            schedule_restore_main_window(app_handle);
+        }
+        SystemTrayEvent::MenuItemClick { id, .. } if id == TRAY_EXIT_MENU_ITEM_ID => {
+            app_handle.exit(0);
+        }
+        SystemTrayEvent::LeftClick { .. } | SystemTrayEvent::DoubleClick { .. } => {
+            schedule_restore_main_window(app_handle);
+        }
+        _ => {}
+    }
+}
+
 fn main() {
     let app_state = match AppState::new() {
         Ok(state) => state,
@@ -121,6 +242,30 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state)
+        .on_window_event(|event| {
+            if event.window().label() != MAIN_WINDOW_LABEL {
+                return;
+            }
+
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
+                let app_handle = event.window().app_handle();
+                let state = app_handle.state::<AppState>();
+
+                match state.get_bool_option("misc_hide_on_close") {
+                    Ok(true) => {
+                        api.prevent_close();
+
+                        if let Err(error) = hide_main_window_to_tray(&app_handle, state.inner()) {
+                            dialogs::show_error(&error);
+                        }
+                    }
+                    Ok(false) => {}
+                    Err(error) => {
+                        dialogs::show_error(&error);
+                    }
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             inject,
             check_for_updates,
@@ -131,6 +276,7 @@ fn main() {
             get_latite_build,
             update_latite_build,
             minimize_window,
+            close_window,
             open_folder
         ])
         .run(tauri::generate_context!())

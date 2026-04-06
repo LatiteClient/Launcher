@@ -8,6 +8,7 @@ use crate::{launch_request::BuildKind, options::OptionsStore};
 pub struct AppState {
     options: Mutex<OptionsStore>,
     is_injecting: AtomicBool,
+    is_tray_icon_visible: AtomicBool,
 }
 
 pub struct InjectionGuard<'a> {
@@ -19,6 +20,7 @@ impl AppState {
         Ok(Self {
             options: Mutex::new(OptionsStore::load()?),
             is_injecting: AtomicBool::new(false),
+            is_tray_icon_visible: AtomicBool::new(false),
         })
     }
 
@@ -76,6 +78,14 @@ impl AppState {
         let mut options = self.lock_options()?;
         options.set_last_used_version(version);
         options.save()
+    }
+
+    pub fn is_tray_icon_visible(&self) -> bool {
+        self.is_tray_icon_visible.load(Ordering::Acquire)
+    }
+
+    pub fn set_tray_icon_visible(&self, visible: bool) {
+        self.is_tray_icon_visible.store(visible, Ordering::Release);
     }
 
     fn lock_options(&self) -> Result<MutexGuard<'_, OptionsStore>, String> {

@@ -20,10 +20,7 @@
 				</div>
 				<div class="windowControls">
 					<img loading="lazy" src="./img/minimize.svg" class="windowControl" onclick="minimizeWindow()" />
-					<img loading="lazy" src="./img/close.svg" class="windowControl" onclick="
-                closeWindowAnimation();
-                closeWindowTimeout();
-              " />
+					<img loading="lazy" src="./img/close.svg" class="windowControl" onclick="requestCloseWindow()" />
 				</div>
 			</div>
 
@@ -326,21 +323,6 @@
 			settingsPage.classList.remove("active");
 			background.classList.remove("hidden");
 			homePage.classList.remove("hidden");
-		}
-
-		function closeWindowAnimation() {
-			const launcher = document.querySelector(".launcher");
-			launcher.classList.add("launcherCloseAnimation");
-		}
-
-		let timeout;
-
-		function closeWindowTimeout() {
-			timeout = setTimeout(closeWindow, 300);
-		}
-
-		function closeWindow() {
-			window.close();
 		}
 
 		function openCreditsModal() {

@@ -76,6 +76,10 @@
         "transparent": true
       }
     ],
+    "systemTray": {
+      "iconPath": "icons/icon.ico",
+      "iconAsTemplate": false
+    },
     "security": {
       "csp": null
     },
