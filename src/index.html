@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./css/styling.css" />
-    <title>Latite V2 Injector</title>
+    <title>Latite Client Launcher</title>
   </head>
 
   <body class="preventSelect">
@@ -39,41 +39,49 @@
         <div class="center" data-tauri-drag-region>
           <div id="launchButton">
             <div id="centerLaunch">
-              <div id="launchText">LAUNCH</div>
+              <div id="launchText" data-i18n="launcher.home.launch.name">
+                LAUNCH
+              </div>
               <div id="statusContainer">
-                <div id="launchSubtext">Status: Idle</div>
+                <div
+                  id="launchSubtext"
+                  data-i18n="launcher.status.idle.name"
+                  data-status-key="launcher.status.idle.name"
+                >
+                  Status: Idle
+                </div>
               </div>
             </div>
           </div>
 
-          <p class="preventSelect">
+          <p class="preventSelect" data-i18n="launcher.home.launchHint.name">
             Right click the launch button to inject custom DLLs
           </p>
-
-          <!-- <div id="selectMenu">
-					<div id="selectButton">
-						<span id="selectVersion">Select a version</span>
-						<img id="downArrow" src="./img/down.svg" />
-					</div>
-					<ul class="options">
-						<li class="option">
-							<span class="optionText">Version 1.20.30</span>
-						</li>
-						<li class="option">
-							<span class="optionText">Version 1.20.40</span>
-						</li>
-						<li class="option">
-							<span class="optionText">Version 1.20.50</span>
-						</li>
-					</ul>
-				</div> -->
         </div>
 
         <div id="misc">
           <div id="infobar">
-            <div class="info" id="changelog">Changelog</div>
-            <div class="info" id="credits">Credits</div>
-            <div class="info" id="openFolder">Open Latite Folder</div>
+            <div
+              class="info"
+              id="changelog"
+              data-i18n="launcher.home.changelog.name"
+            >
+              Changelog
+            </div>
+            <div
+              class="info"
+              id="credits"
+              data-i18n="launcher.home.credits.name"
+            >
+              Credits
+            </div>
+            <div
+              class="info"
+              id="openFolder"
+              data-i18n="launcher.home.openFolder.name"
+            >
+              Open Latite Folder
+            </div>
           </div>
 
           <div id="iconbar">
@@ -93,7 +101,9 @@
         <div class="settingsheader" data-tauri-drag-region>
           <div class="brand">
             <img loading="lazy" src="./img/latite.png" class="logoImg" />
-            <div class="name">Settings</div>
+            <div class="name" data-i18n="launcher.settings.title.name">
+              Settings
+            </div>
           </div>
           <img
             loading="lazy"
@@ -105,7 +115,33 @@
 
         <div class="centersettings">
           <div class="settingsection">
-            <h2>Latite Build</h2>
+            <h2 data-i18n="launcher.settings.launcherLanguageSection.name">
+              Launcher Language
+            </h2>
+            <div class="settingoption settingoptionBlock">
+              <label class="settingField" for="launcherLanguage">
+                <span
+                  class="settingFieldLabel"
+                  data-i18n="launcher.settings.launcherLanguage.name"
+                >
+                  Language
+                </span>
+                <span
+                  class="settingFieldDescription"
+                  data-i18n="launcher.settings.launcherLanguage.desc"
+                >
+                  Use System Default to follow your operating system language
+                  automatically.
+                </span>
+                <select id="launcherLanguage" class="settingSelect"></select>
+              </label>
+            </div>
+          </div>
+
+          <div class="settingsection">
+            <h2 data-i18n="launcher.settings.latiteBuildSection.name">
+              Latite Build
+            </h2>
             <div class="latiteBuildOptions">
               <label class="latiteBuildChoice">
                 <input
@@ -115,8 +151,16 @@
                   class="latite_build_input"
                 />
                 <span class="latiteBuildCard">
-                  <span class="latiteBuildTitle">Latite Release</span>
-                  <span class="latiteBuildDescription">
+                  <span
+                    class="latiteBuildTitle"
+                    data-i18n="launcher.build.release.name"
+                  >
+                    Latite Release
+                  </span>
+                  <span
+                    class="latiteBuildDescription"
+                    data-i18n="launcher.build.release.desc"
+                  >
                     Stable, default build of Latite Client
                   </span>
                 </span>
@@ -130,17 +174,25 @@
                   class="latite_build_input"
                 />
                 <span class="latiteBuildCard">
-                  <span class="latiteBuildTitle">Latite Nightly</span>
-                  <span class="latiteBuildDescription">
+                  <span
+                    class="latiteBuildTitle"
+                    data-i18n="launcher.build.nightly.name"
+                  >
+                    Latite Nightly
+                  </span>
+                  <span
+                    class="latiteBuildDescription"
+                    data-i18n="launcher.build.nightly.desc"
+                  >
                     Automated, experimental builds of Latite Client containing
                     the latest changes
-                    <p class="latiteBuildDescription">
-                      <strong
-                        >These builds have a higher chance of containing bugs or
-                        crashes.</strong
-                      >
-                    </p>
                   </span>
+                  <p class="latiteBuildDescription latiteBuildWarning">
+                    <strong data-i18n="launcher.build.nightlyWarning.name">
+                      These builds have a higher chance of containing bugs or
+                      crashes.
+                    </strong>
+                  </p>
                 </span>
               </label>
 
@@ -152,16 +204,24 @@
                   class="latite_build_input"
                 />
                 <span class="latiteBuildCard">
-                  <span class="latiteBuildTitle">Latite Debug</span>
-                  <span class="latiteBuildDescription">
+                  <span
+                    class="latiteBuildTitle"
+                    data-i18n="launcher.build.debug.name"
+                  >
+                    Latite Debug
+                  </span>
+                  <span
+                    class="latiteBuildDescription"
+                    data-i18n="launcher.build.debug.desc"
+                  >
                     Automated, experimental builds of Latite Client meant for
                     detailed bug reports
                   </span>
-                  <p class="latiteBuildDescription">
-                    <strong
-                      >These builds will run slower than Latite Release or
-                      Nightly</strong
-                    >
+                  <p class="latiteBuildDescription latiteBuildWarning">
+                    <strong data-i18n="launcher.build.debugWarning.name">
+                      These builds will run slower than Latite Release or
+                      Nightly.
+                    </strong>
                   </p>
                 </span>
               </label>
@@ -169,30 +229,50 @@
           </div>
 
           <div class="settingsection">
-            <h2>Custom DLL</h2>
+            <h2 data-i18n="launcher.settings.customDllSection.name">
+              Custom DLL
+            </h2>
             <div class="settingoption">
-              <p>Use a custom DLL automatically</p>
-              <input class="options_input" type="checkbox" id="use_custom_dll" />
+              <p data-i18n="launcher.settings.useCustomDll.name">
+                Use a custom DLL automatically
+              </p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="use_custom_dll"
+              />
             </div>
             <div
               class="settingoption customDllInputOption is-disabled"
               id="customDllInputOption"
             >
-              <label class="customDllField" for="customDllPath">
-                <span>Custom DLL path or URL</span>
+              <label class="settingField customDllField" for="customDllPath">
+                <span
+                  class="settingFieldLabel"
+                  data-i18n="launcher.settings.customDllPath.name"
+                >
+                  Custom DLL path or URL
+                </span>
                 <div class="customDllInputRow">
                   <input
                     type="text"
                     id="customDllPath"
                     placeholder="Enter a DLL path or URL"
+                    data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name"
                   />
-                  <button type="button" id="browseCustomDll" class="customDllActionButton">
+                  <button
+                    type="button"
+                    id="browseCustomDll"
+                    class="customDllActionButton"
+                    data-i18n="launcher.settings.customDllBrowse.name"
+                  >
                     Browse
                   </button>
                   <button
                     type="button"
                     id="saveCustomDll"
                     class="customDllActionButton primary"
+                    data-i18n="launcher.settings.customDllSave.name"
                   >
                     Save
                   </button>
@@ -202,13 +282,19 @@
           </div>
 
           <div class="settingsection">
-            <h2>Discord RPC</h2>
+            <h2 data-i18n="launcher.settings.discordRpcSection.name">
+              Discord RPC
+            </h2>
             <div class="settingoption">
-              <p>Discord Rich Presence</p>
+              <p data-i18n="launcher.settings.rpcEnabled.name">
+                Discord Rich Presence
+              </p>
               <input class="options_input" type="checkbox" id="rpc_enabled" />
             </div>
             <div class="settingoption">
-              <p>Show server in RPC</p>
+              <p data-i18n="launcher.settings.rpcShowServer.name">
+                Show server in RPC
+              </p>
               <input
                 class="options_input"
                 type="checkbox"
@@ -216,7 +302,9 @@
               />
             </div>
             <div class="settingoption">
-              <p>Show Minecraft Version in RPC</p>
+              <p data-i18n="launcher.settings.rpcShowMinecraftVersion.name">
+                Show Minecraft version in RPC
+              </p>
               <input
                 class="options_input"
                 type="checkbox"
@@ -224,7 +312,9 @@
               />
             </div>
             <div class="settingoption">
-              <p>Show time played in RPC</p>
+              <p data-i18n="launcher.settings.rpcShowTimePlayed.name">
+                Show time played in RPC
+              </p>
               <input
                 class="options_input"
                 type="checkbox"
@@ -234,9 +324,13 @@
           </div>
 
           <div class="settingsection">
-            <h2>Miscellaneous</h2>
+            <h2 data-i18n="launcher.settings.miscSection.name">
+              Miscellaneous
+            </h2>
             <div class="settingoption">
-              <p>Hide to system tray on close</p>
+              <p data-i18n="launcher.settings.miscHideOnClose.name">
+                Hide to system tray on close
+              </p>
               <input
                 class="options_input"
                 type="checkbox"
@@ -244,7 +338,9 @@
               />
             </div>
             <div class="settingoption">
-              <p>Close after Injected</p>
+              <p data-i18n="launcher.settings.miscCloseAfterInjected.name">
+                Close after injected
+              </p>
               <input
                 class="options_input"
                 type="checkbox"
@@ -255,12 +351,11 @@
         </div>
       </div>
 
-      <!-- Credits Modal -->
       <div id="creditsModal" class="modal hidden">
         <div class="modalOverlay"></div>
         <div class="modalContent">
           <div class="modalHeader">
-            <h2>Credits</h2>
+            <h2 data-i18n="launcher.credits.title.name">Credits</h2>
             <img
               src="./img/close.svg"
               class="modalClose"
@@ -269,18 +364,45 @@
           </div>
           <div class="modalBody">
             <div class="one">
-              <p><strong>Developers</strong></p>
+              <p>
+                <strong data-i18n="launcher.credits.developers.name"
+                  >Developers</strong
+                >
+              </p>
               <ul>
-                <li><strong>JayRSky:</strong> Lead Client Dev</li>
-                <li><strong>Plextora:</strong> Client/Launcher Dev</li>
-                <li><strong>MarioSQ:</strong> Contributing Client Dev</li>
-                <li><strong>CreativeMC:</strong> Website/Launcher Dev</li>
+                <li>
+                  <strong>JayRSky:</strong>
+                  <span data-i18n="launcher.credits.jayrskyRole.name"
+                    >Lead Client Dev</span
+                  >
+                </li>
+                <li>
+                  <strong>Plextora:</strong>
+                  <span data-i18n="launcher.credits.plextoraRole.name"
+                    >Client/Launcher Dev</span
+                  >
+                </li>
+                <li>
+                  <strong>MarioSQ:</strong>
+                  <span data-i18n="launcher.credits.mariosqRole.name"
+                    >Contributing Client Dev</span
+                  >
+                </li>
+                <li>
+                  <strong>CreativeMC:</strong>
+                  <span data-i18n="launcher.credits.creativemcRole.name"
+                    >Website/Launcher Dev</span
+                  >
+                </li>
               </ul>
             </div>
-            <br />
             <div class="two">
-              <p><strong>Contributors</strong></p>
               <p>
+                <strong data-i18n="launcher.credits.contributors.name"
+                  >Contributors</strong
+                >
+              </p>
+              <p data-i18n="launcher.credits.thanks.name">
                 Special thanks to all contributors who have helped improve this
                 project.
               </p>
@@ -303,7 +425,6 @@
         const homePage = document.querySelector(".page.home");
         const settingsPage = document.querySelector(".page.settings");
 
-        // closeSelectMenu();
         homePage.classList.add("hidden");
         settingsPage.classList.add("active");
       }
@@ -312,7 +433,6 @@
         const homePage = document.querySelector(".page.home");
         const settingsPage = document.querySelector(".page.settings");
 
-        // closeSelectMenu();
         settingsPage.classList.remove("active");
         homePage.classList.remove("hidden");
       }
@@ -332,34 +452,6 @@
         window.close();
       }
 
-      // function toggleSelectMenu() {
-      // 	const selectMenu = document.querySelector("#selectMenu");
-      // 	selectMenu.classList.toggle("active");
-      // }
-
-      // function closeSelectMenu() {
-      // 	const selectMenu = document.querySelector("#selectMenu");
-      // 	selectMenu.classList.remove("active");
-      // }
-
-      // document.querySelector("#selectButton").addEventListener("click", (e) => {
-      // 	e.stopPropagation();
-      // 	toggleSelectMenu();
-      // });
-
-      // document.querySelectorAll("#selectMenu .option").forEach((option) => {
-      // 	option.addEventListener("click", () => {
-      // 		document.querySelector("#selectVersion").textContent =
-      // 			option.querySelector(".optionText").textContent;
-      // 		closeSelectMenu();
-      // 	});
-      // });
-
-      // document.addEventListener("click", () => {
-      // 	closeSelectMenu();
-      // });
-
-      /* Credits Modal Functions */
       function openCreditsModal() {
         const modal = document.getElementById("creditsModal");
         modal.classList.remove("hidden");
@@ -370,17 +462,14 @@
         modal.classList.add("hidden");
       }
 
-      // Credits modal event listeners
       document
         .getElementById("credits")
         .addEventListener("click", openCreditsModal);
 
-      // Close modal when clicking on overlay
       document
         .querySelector(".modalOverlay")
         .addEventListener("click", closeCreditsModal);
 
-      // Close modal on ESC key
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
           closeCreditsModal();

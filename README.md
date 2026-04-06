@@ -6,7 +6,7 @@ The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclien
 
 - [x] Offline Latite injection
 - [x] Notifications for new injector updates
-- [ ] Translations
+- [x] Translations
 - [x] Custom DLL
 - [ ] Minimize to tray
 - [x] Close after injected

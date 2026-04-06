@@ -16,12 +16,21 @@ use crate::{
     inject as injector,
     launch_request::{BuildKind, InjectRequest},
     paths, release,
+    ui::{self, UiDialog, UiMessage},
 };
 use tauri::{AppHandle, Manager};
 
 const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
 const STATUS_EVENT: &str = "inject_status";
-const STATUS_IDLE: &str = "Idle";
+const STATUS_IDLE: &str = "launcher.status.idle.name";
+const STATUS_INJECTING: &str = "launcher.status.injecting.name";
+const STATUS_OPENING_MINECRAFT: &str = "launcher.status.openingMinecraft.name";
+const STATUS_FINALIZING: &str = "launcher.status.finalizing.name";
+const STATUS_SUCCESS: &str = "launcher.status.success.name";
+const STATUS_INJECT_FAILED: &str = "launcher.status.injectFailed.name";
+const STATUS_LAUNCH_FAILED: &str = "launcher.status.launchFailed.name";
+const STATUS_MINECRAFT_NOT_FOUND: &str = "launcher.status.minecraftNotFound.name";
+const STATUS_VERIFY_FAILED: &str = "launcher.status.verifyFailed.name";
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
@@ -78,16 +87,24 @@ impl StatusEmitter {
         Self { app_handle }
     }
 
-    fn emit(&self, status: &str) {
-        if let Err(error) = self.app_handle.emit_all(STATUS_EVENT, status) {
-            eprintln!("Failed to emit injection status '{status}': {error}");
+    fn emit(&self, message: UiMessage) {
+        if let Err(error) = self.app_handle.emit_all(STATUS_EVENT, &message) {
+            eprintln!("Failed to emit injection status '{}': {error}", message.key);
         }
     }
 
-    fn show_then_idle(&self, status: &str, delay: Duration) {
+    fn emit_key(&self, key: &str) {
+        self.emit(UiMessage::new(key));
+    }
+
+    fn emit_dialog(&self, dialog: UiDialog) {
+        ui::emit_dialog(&self.app_handle, &dialog);
+    }
+
+    fn show_then_idle(&self, status: UiMessage, delay: Duration) {
         self.emit(status);
         thread::sleep(delay);
-        self.emit(STATUS_IDLE);
+        self.emit(UiMessage::new(STATUS_IDLE));
     }
 }
 
@@ -97,7 +114,7 @@ struct StatusAnimation {
 }
 
 impl StatusAnimation {
-    fn start(status: StatusEmitter, label: &'static str) -> Self {
+    fn start(status: StatusEmitter, label_key: &'static str) -> Self {
         let should_run = Arc::new(AtomicBool::new(true));
         let animation_flag = Arc::clone(&should_run);
 
@@ -106,8 +123,8 @@ impl StatusAnimation {
             let mut dot_index = 0;
 
             while animation_flag.load(Ordering::Relaxed) {
-                let current_status = format!("{label}{}", dots[dot_index]);
-                status.emit(&current_status);
+                let current_status = UiMessage::new(label_key).with_var("dots", dots[dot_index]);
+                status.emit(current_status);
                 dot_index = (dot_index + 1) % dots.len();
                 thread::sleep(STATUS_ANIMATION_DELAY);
             }
@@ -142,17 +159,35 @@ pub async fn inject(
     request: InjectRequest,
     app_handle: &AppHandle,
 ) -> Result<(), LaunchError> {
-    let _guard = state.try_begin_injection().map_err(LaunchError::from)?;
+    let _guard = state.try_begin_injection().map_err(|error| {
+        ui::emit_dialog(
+            app_handle,
+            &UiDialog::error("launcher.error.injectionInProgress.name"),
+        );
+        LaunchError::new(error).mark_dialog_shown()
+    })?;
     println!("Injecting...");
 
-    let dll_path = resolve_dll_path(state, request)
-        .await
-        .map_err(LaunchError::from)?;
-    let app_handle = app_handle.clone();
+    let dll_path = resolve_dll_path(state, request).await.map_err(|error| {
+        ui::emit_dialog(
+            app_handle,
+            &UiDialog::error("launcher.error.prepareDll.name").with_var("detail", &error),
+        );
+        LaunchError::new(error).mark_dialog_shown()
+    })?;
+    let worker_app_handle = app_handle.clone();
 
-    tauri::async_runtime::spawn_blocking(move || inject_with_status(dll_path, app_handle))
+    tauri::async_runtime::spawn_blocking(move || inject_with_status(dll_path, worker_app_handle))
         .await
-        .map_err(|error| LaunchError::new(format!("Injection task failed: {error}")))?
+        .map_err(|error| {
+            let message = format!("Injection task failed: {error}");
+            ui::emit_dialog(
+                app_handle,
+                &UiDialog::error("launcher.error.launchTaskFailed.name")
+                    .with_var("detail", &message),
+            );
+            LaunchError::new(message).mark_dialog_shown()
+        })?
 }
 
 fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), LaunchError> {
@@ -160,7 +195,7 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
     let pid = find_or_launch_minecraft(&status)?;
 
     let injection_started_at = Instant::now();
-    let injection_animation = StatusAnimation::start(status.clone(), "Injecting");
+    let injection_animation = StatusAnimation::start(status.clone(), STATUS_INJECTING);
     let injection_result = injector::open_target_process(pid).and_then(|target_process| {
         injector::inject_dll(&target_process, &dll_path)?;
         Ok(target_process)
@@ -174,7 +209,8 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
         Err(error) => {
             return Err(report_failure(
                 &status,
-                "Failed to inject",
+                STATUS_INJECT_FAILED,
+                UiDialog::error("launcher.error.injectFailed.name").with_var("detail", &error),
                 error,
                 FAILURE_STATUS_TIME,
             ));
@@ -183,15 +219,16 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
 
     match monitor_process_after_injection(&target_process, &status)? {
         ProcessMonitorOutcome::Running => {
-            status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
+            status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
             Ok(())
         }
-        ProcessMonitorOutcome::Exited(exit_code)
-            if exit_code != 0 =>
-        {
+        ProcessMonitorOutcome::Exited(exit_code) if exit_code != 0 => {
             Err(report_failure(
                 &status,
-                "Failed to inject",
+                STATUS_INJECT_FAILED,
+                UiDialog::error("launcher.error.injectedProcessExited.name")
+                    .with_var("pid", pid)
+                    .with_var("exitCode", format!("{exit_code:#x}")),
                 format!(
                     "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
                 ),
@@ -202,50 +239,67 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
             println!(
                 "Process {pid} exited after injection with exit code {exit_code:#x}; treating injection as successful."
             );
-            status.show_then_idle("Successfully injected", FAILURE_STATUS_TIME);
+            status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
             Ok(())
         }
     }
 }
 
 fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<u32, LaunchError> {
-    if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME).map_err(LaunchError::from)? {
+    if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME).map_err(|error| {
+        report_failure(
+            status,
+            STATUS_INJECT_FAILED,
+            UiDialog::error("launcher.error.injectFailed.name").with_var("detail", &error),
+            error,
+            FAILURE_STATUS_TIME,
+        )
+    })? {
         println!("Minecraft process found with PID: {pid}");
-        status.emit("Injecting");
+        status.emit_key(STATUS_INJECTING);
         return Ok(pid);
     }
 
-    status.emit("Opening Minecraft");
+    status.emit_key(STATUS_OPENING_MINECRAFT);
 
     if let Err(error) = launch_minecraft() {
         return Err(report_failure(
             status,
-            "Cannot open Minecraft",
+            STATUS_LAUNCH_FAILED,
+            UiDialog::error("launcher.error.openMinecraft.name").with_var("detail", &error),
             error,
             LAUNCH_FAILURE_STATUS_TIME,
         ));
     }
 
-    wait_for_process(MC_PROCESS_NAME)
-        .map_err(|error| report_failure(status, "Minecraft not found", error, FAILURE_STATUS_TIME))
+    wait_for_process(MC_PROCESS_NAME).map_err(|error| {
+        report_failure(
+            status,
+            STATUS_MINECRAFT_NOT_FOUND,
+            UiDialog::error("launcher.error.minecraftNotFound.name").with_var("detail", &error),
+            error,
+            FAILURE_STATUS_TIME,
+        )
+    })
 }
 
 fn report_failure(
     status: &StatusEmitter,
-    status_message: &str,
+    status_key: &str,
+    dialog: UiDialog,
     error: impl Into<String>,
     delay: Duration,
 ) -> LaunchError {
     let error = LaunchError::new(error.into());
-    status.emit(status_message);
+    status.emit(UiMessage::new(status_key));
     // TODO: Append directions to report the bug with Latite Debug to all error messages
     // TODO: not related to report_failure specifically but while I'm here I might as well add
     // that we should be logging all these print's to a file, similar to how the old latiteinjector
     // does it.
     println!("{}", error.message());
-    crate::dialogs::show_error(error.message());
+    status.emit_dialog(dialog);
     thread::sleep(delay);
-    status.emit(STATUS_IDLE);
+    status.emit(UiMessage::new(STATUS_IDLE));
     error.mark_dialog_shown()
 }
 
@@ -261,7 +315,7 @@ fn monitor_process_after_injection(
     target_process: &injector::TargetProcess,
     status: &StatusEmitter,
 ) -> Result<ProcessMonitorOutcome, LaunchError> {
-    let _animation: StatusAnimation = StatusAnimation::start(status.clone(), "Finalizing");
+    let _animation: StatusAnimation = StatusAnimation::start(status.clone(), STATUS_FINALIZING);
     let monitor_started_at = Instant::now();
 
     match injector::wait_for_process_exit(target_process, POST_INJECTION_MONITOR_DURATION) {
@@ -283,7 +337,10 @@ fn monitor_process_after_injection(
         }
         Err(error) => Err(report_failure(
             status,
-            "Failed to verify injection",
+            STATUS_VERIFY_FAILED,
+            UiDialog::error("launcher.error.verifyInjection.name")
+                .with_var("detail", &error)
+                .with_var("pid", target_process.pid()),
             format!(
                 "Failed to confirm Minecraft process {} stayed open after injection: {error}",
                 target_process.pid()
@@ -293,15 +350,20 @@ fn monitor_process_after_injection(
     }
 }
 
-pub async fn check_for_updates(current_version: &str) -> Result<(), String> {
+pub async fn check_for_updates(
+    current_version: &str,
+    app_handle: &AppHandle,
+) -> Result<(), String> {
     match release::fetch_latest_release_name(release::LAUNCHER_REPO).await {
         Ok(latest_version) => {
             println!("Latest launcher version: {latest_version}, Current launcher version: {current_version}");
 
             if current_version != latest_version {
-                crate::dialogs::show_info(&format!(
-                    "A new version of the Latite Launcher is available! Latest version: {latest_version}"
-                ));
+                ui::emit_dialog(
+                    app_handle,
+                    &UiDialog::info("launcher.dialog.updateAvailable.name")
+                        .with_var("latestVersion", latest_version),
+                );
             }
 
             Ok(())

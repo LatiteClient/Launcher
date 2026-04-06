@@ -9,6 +9,7 @@ mod launcher;
 mod options;
 mod paths;
 mod release;
+mod ui;
 
 use app_state::AppState;
 use launch_request::{BuildKind, InjectRequest};
@@ -39,6 +40,12 @@ async fn inject(
     }
 
     result.map_err(launcher::LaunchError::into_message)
+}
+
+#[tauri::command]
+async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let current_version = app_handle.package_info().version.to_string();
+    launcher::check_for_updates(&current_version, &app_handle).await
 }
 
 #[tauri::command]
@@ -113,22 +120,10 @@ fn main() {
     };
 
     tauri::Builder::default()
-        .setup(|app| {
-            let app_version = app.package_info().version.to_string();
-            tauri::async_runtime::spawn(async move {
-                match launcher::check_for_updates(&app_version).await {
-                    Ok(_) => {}
-                    Err(err) => {
-                        eprintln!("{err}");
-                    }
-                };
-            });
-
-            Ok(())
-        })
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             inject,
+            check_for_updates,
             update_option,
             get_option,
             get_string_option,

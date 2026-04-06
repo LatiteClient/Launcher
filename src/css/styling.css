@@ -656,6 +656,7 @@ p {
   gap: 4px;
   box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   max-width: 100%;
   padding: 14px 16px;
   border-radius: 14px;
@@ -709,12 +710,86 @@ p {
   line-height: 1.3;
 }
 
+.latiteBuildWarning {
+  margin: 0;
+}
+
 .settingoption {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+}
+
+.settingoptionBlock {
+  align-items: stretch;
+}
+
+.settingField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  color: #ffffff;
+  text-shadow: 0 4px 7px #000000;
+}
+
+.settingFieldLabel {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.settingFieldDescription {
+  color: rgba(240, 240, 240, 0.72);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.latiteBuildTitle,
+.latiteBuildDescription,
+.latiteBuildWarning,
+.latiteBuildWarning strong,
+.settingFieldLabel,
+.settingFieldDescription,
+.settingoption p {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.settingSelect {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+  color: #ffffff;
+  font:
+    500 13px "Segoe UI",
+    sans-serif;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.settingSelect:focus {
+  outline: none;
+  border-color: rgba(145, 176, 255, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 3px rgba(120, 164, 255, 0.16),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.settingSelect option {
+  color: #101010;
 }
 
 .customDllInputOption {
@@ -727,17 +802,7 @@ p {
 }
 
 .customDllField {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  color: #ffffff;
-  text-shadow: 0 4px 7px #000000;
-}
-
-.customDllField span {
-  font-size: 16px;
-  font-weight: 500;
+  min-width: 0;
 }
 
 .customDllField input[type="text"] {

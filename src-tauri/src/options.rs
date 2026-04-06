@@ -15,6 +15,7 @@ struct Options {
     misc_close_after_injected: bool,
     use_custom_dll: bool,
     custom_dll_path: String,
+    launcher_language: String,
     latite_build: BuildKind,
     last_used_version: Option<String>,
 }
@@ -115,6 +116,7 @@ impl Default for Options {
             misc_close_after_injected: false,
             use_custom_dll: false,
             custom_dll_path: String::new(),
+            launcher_language: "auto".to_string(),
             latite_build: BuildKind::Release,
             last_used_version: None,
         }
@@ -151,6 +153,7 @@ impl Options {
     fn string_option(&self, id: &str) -> Result<&String, String> {
         match id {
             "custom_dll_path" => Ok(&self.custom_dll_path),
+            "launcher_language" => Ok(&self.launcher_language),
             _ => Err(format!("Unknown option: {id}")),
         }
     }
@@ -158,6 +161,7 @@ impl Options {
     fn string_option_mut(&mut self, id: &str) -> Result<&mut String, String> {
         match id {
             "custom_dll_path" => Ok(&mut self.custom_dll_path),
+            "launcher_language" => Ok(&mut self.launcher_language),
             _ => Err(format!("Unknown option: {id}")),
         }
     }
