@@ -154,7 +154,7 @@ unsafe fn inject_dll_inner(target_process: &TargetProcess, dll_path: &Path) -> R
         return Err("LoadLibraryW failed: DLL could not be loaded (exit code was 0).".to_string());
     }
 
-    println!(
+    crate::log_info!(
         "Injected {} into process {pid}. LoadLibraryW returned: {thread_exit_code:#x}",
         full_dll_path.display()
     );
@@ -274,7 +274,7 @@ impl Drop for RemoteAllocation {
     fn drop(&mut self) {
         unsafe {
             if let Err(error) = VirtualFreeEx(self.process, self.address, 0, MEM_RELEASE) {
-                eprintln!(
+                crate::log_error!(
                     "Failed to free remote allocation at {:p}: {error}",
                     self.address
                 );

@@ -28,7 +28,7 @@ pub struct OptionsStore {
 impl OptionsStore {
     pub fn load() -> Result<Self, String> {
         let options_path = crate::paths::get_options_path()?;
-        println!("Loading options from: {}", options_path.display());
+        crate::log_info!("Loading options from: {}", options_path.display());
 
         if !options_path.exists() {
             let store = Self::default();

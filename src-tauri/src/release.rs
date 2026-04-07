@@ -137,7 +137,7 @@ pub async fn download_build(build: BuildKind, directory: &Path) -> Result<PathBu
         ));
     }
 
-    println!(
+    crate::log_info!(
         "{} files downloaded successfully to {}.",
         build_display_name(build),
         directory.display()

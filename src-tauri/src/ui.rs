@@ -68,9 +68,10 @@ impl UiDialog {
 
 pub fn emit_dialog(app_handle: &AppHandle, dialog: &UiDialog) {
     if let Err(error) = app_handle.emit_all(DIALOG_EVENT, dialog) {
-        eprintln!(
+        crate::log_error!(
             "Failed to emit launcher dialog '{}' at level {:?}: {error}",
-            dialog.key, dialog.level
+            dialog.key,
+            dialog.level
         );
     }
 }

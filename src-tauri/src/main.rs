@@ -6,6 +6,7 @@ mod dialogs;
 mod inject;
 mod launch_request;
 mod launcher;
+mod logging;
 mod options;
 mod paths;
 mod release;
@@ -230,12 +231,16 @@ fn handle_system_tray_event(app_handle: &tauri::AppHandle, event: SystemTrayEven
 }
 
 fn main() {
+    if let Err(error) = logging::init() {
+        logging::log_startup_error(&format!("Failed to initialize launcher logging: {error}"));
+    }
+
     let app_state = match AppState::new() {
         Ok(state) => state,
         Err(error) => {
             let message = format!("Failed to initialize launcher: {error}");
             dialogs::show_error(&message);
-            eprintln!("{message}");
+            crate::log_error!("{message}");
             return;
         }
     };

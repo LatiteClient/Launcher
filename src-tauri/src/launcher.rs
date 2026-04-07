@@ -93,7 +93,7 @@ impl StatusEmitter {
 
     fn emit(&self, message: UiMessage) {
         if let Err(error) = self.app_handle.emit_all(STATUS_EVENT, &message) {
-            eprintln!("Failed to emit injection status '{}': {error}", message.key);
+            crate::log_error!("Failed to emit injection status '{}': {error}", message.key);
         }
     }
 
@@ -147,7 +147,7 @@ impl Drop for StatusAnimation {
 
         if let Some(handle) = self.handle.take() {
             if handle.join().is_err() {
-                eprintln!("Status animation thread panicked.");
+                crate::log_error!("Status animation thread panicked.");
             }
         }
     }
@@ -164,22 +164,23 @@ pub async fn inject(
     app_handle: &AppHandle,
 ) -> Result<(), LaunchError> {
     let status = StatusEmitter::new(app_handle.clone());
-    
+
     let _guard = state.try_begin_injection().map_err(|error| {
         // Injection in progress - show dialog only, no status
         let error = LaunchError::new(error);
         status.emit_dialog(UiDialog::error("launcher.error.injectionInProgress.name"));
-        println!("{}", error.message());
+        crate::log_error!("{}", error.message());
         error.mark_dialog_shown()
     })?;
-    println!("Injecting...");
+    crate::log_info!("Injecting...");
 
     let dll_path = resolve_dll_path(state, request).await.map_err(|error| {
         // Distinguish between invalid DLL path and DLL preparation errors
-        if error.contains("does not exist") 
+        if error.contains("does not exist")
             || error.contains("is not a file")
             || error.contains("is not a DLL")
-            || error.contains("Failed to resolve DLL path") {
+            || error.contains("Failed to resolve DLL path")
+        {
             report_failure(
                 &status,
                 STATUS_INVALID_DLL_PATH,
@@ -262,7 +263,7 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
             ))
         }
         ProcessMonitorOutcome::Exited(exit_code) => {
-            println!(
+            crate::log_info!(
                 "Process {pid} exited after injection with exit code {exit_code:#x}; treating injection as successful."
             );
             status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
@@ -280,11 +281,11 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
             error,
         )
     })? {
-        println!("Minecraft process found with PID: {pid} - Minecraft already running");
+        crate::log_info!("Minecraft process found with PID: {pid} - Minecraft already running");
         return Ok((pid, true));
     }
 
-    println!("Minecraft process not found - launching Minecraft");
+    crate::log_info!("Minecraft process not found - launching Minecraft");
     status.emit_key(STATUS_OPENING_MINECRAFT);
 
     if let Err(error) = launch_minecraft() {
@@ -316,7 +317,8 @@ fn report_failure(
 ) -> LaunchError {
     let error = LaunchError::new(error.into());
     status.emit(UiMessage::new(status_key));
-    println!("{}", error.message());
+    // TODO: Append directions to report the bug with Latite Debug to all error messages
+    crate::log_error!("{}", error.message());
     status.emit_dialog(dialog);
     // Keep status visible while user reads dialog, then revert to idle
     // Typical dialog dismissal time is 2-5 seconds, use 5 second timeout
@@ -343,7 +345,7 @@ fn monitor_process_after_injection(
 
     match injector::wait_for_process_exit(target_process, POST_INJECTION_MONITOR_DURATION) {
         Ok(injector::ProcessWaitOutcome::Running) => {
-            println!(
+            crate::log_info!(
                 "Process {target_pid} survived {}ms monitoring period - injection successful",
                 POST_INJECTION_MONITOR_DURATION.as_millis()
             );
@@ -351,13 +353,13 @@ fn monitor_process_after_injection(
         }
         Ok(injector::ProcessWaitOutcome::Exited(exit_code)) => {
             let elapsed_ms = monitor_started_at.elapsed().as_millis();
-            println!(
+            crate::log_info!(
                 "Process {target_pid} exited after {elapsed_ms}ms with exit code {exit_code:#x} - DLL may be incompatible or crashed"
             );
             Ok(ProcessMonitorOutcome::Exited(exit_code))
         }
         Err(error) => {
-            eprintln!("Failed to monitor process {target_pid}: {error}");
+            crate::log_error!("Failed to monitor process {target_pid}: {error}");
             Err(report_failure(
                 status,
                 STATUS_VERIFY_FAILED,
@@ -378,7 +380,9 @@ pub async fn check_for_updates(
 ) -> Result<(), String> {
     match release::fetch_latest_release_name(release::LAUNCHER_REPO).await {
         Ok(latest_version) => {
-            println!("Latest launcher version: {latest_version}, Current launcher version: {current_version}");
+            crate::log_info!(
+                "Latest launcher version: {latest_version}, Current launcher version: {current_version}"
+            );
 
             if current_version != latest_version {
                 ui::emit_dialog(
@@ -436,11 +440,11 @@ async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), 
     let previous_version = state.get_last_used_version()?;
     let latest_dll_version = match release::fetch_latest_release_name(release::RELEASE_REPO).await {
         Ok(version) => {
-            println!("Latest release version: {version}");
+            crate::log_info!("Latest release version: {version}");
             Some(version)
         }
         Err(error) => {
-            eprintln!("{error}");
+            crate::log_error!("{error}");
             None
         }
     };
@@ -469,8 +473,8 @@ async fn prepare_mutable_build(build: BuildKind, build_path: &Path) -> Result<()
     match release::download_build(build, build_path).await {
         Ok(_) => Ok(()),
         Err(error) if cached_assets_exist => {
-            eprintln!("{error}");
-            println!(
+            crate::log_error!("{error}");
+            crate::log_info!(
                 "Using cached {} files from {}.",
                 release::build_display_name(build),
                 build_path.display()
@@ -595,7 +599,7 @@ fn launch_minecraft() -> Result<(), String> {
 
 fn wait_for_process(process_name: &str) -> Result<u32, String> {
     for attempt in 0..PROCESS_LOOKUP_ATTEMPTS {
-        println!(
+        crate::log_info!(
             "Waiting for {process_name}... ({}/{PROCESS_LOOKUP_ATTEMPTS})",
             attempt + 1
         );
@@ -603,7 +607,7 @@ fn wait_for_process(process_name: &str) -> Result<u32, String> {
         thread::sleep(PROCESS_LOOKUP_DELAY);
 
         if let Some(pid) = injector::find_process_id(process_name)? {
-            println!("{process_name} found with PID: {pid}");
+            crate::log_info!("{process_name} found with PID: {pid}");
             return Ok(pid);
         }
     }

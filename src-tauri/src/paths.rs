@@ -17,6 +17,11 @@ pub fn get_dlls_path() -> Result<PathBuf, String> {
     ensure_directory(&dlls_path)
 }
 
+pub fn get_logs_path() -> Result<PathBuf, String> {
+    let logs_path = get_launcher_path()?.join("Logs");
+    ensure_directory(&logs_path)
+}
+
 pub fn get_latite_build_path(build: BuildKind) -> Result<PathBuf, String> {
     let build_path = get_dlls_path()?.join(match build {
         BuildKind::Release => "release",
