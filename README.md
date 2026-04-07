@@ -8,7 +8,7 @@ The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclien
 - [x] Notifications for new injector updates
 - [x] Translations
 - [x] Custom DLL
-- [ ] Minimize to tray
+- [x] Minimize to tray
 - [x] Close after injected
 - [x] Status Text
 - [x] Option to use Latite Nightly/Debug
