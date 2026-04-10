@@ -12,6 +12,12 @@ body {
 	user-select: none;
 }
 
+.rightClickText {
+	width: 400px;
+	text-align: center;
+	text-wrap: wrap;
+}
+
 .launcher {
 	display: flex;
 	position: relative;
@@ -482,7 +488,6 @@ p {
 	display: flex;
 	width: 100%;
 	justify-content: space-between;
-	align-items: center;
 	gap: 20px;
 	font-size: 23px;
 	color: #fff;
@@ -535,7 +540,6 @@ p {
 #iconbar {
 	display: flex;
 	align-items: center;
-	justify-content: center;
 }
 
 #iconbar {
@@ -545,11 +549,34 @@ p {
 #infobar {
 	font-size: 15px;
 	gap: 18px;
+	width: 500px;
+	overflow-x: scroll;
+	/* overflow-y: hidden; */
+	mask-image: linear-gradient(to right, #000000 95%, #00000027 100%);
+	padding: 2px 2px 4px 2px;
+	padding-right: 25px;
+}
+
+#infobar {
+  /* IE and Edge */
+  -ms-overflow-style: none;
+  
+  /* Firefox */
+  scrollbar-width: none;
+}
+
+/* Chrome, Safari, and Opera */
+#infobar::-webkit-scrollbar {
+  display: none;
 }
 
 .info {
 	font-family: "Segoe UI", sans-serif;
-	padding: 8px 12px;
+	padding: 0 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 35px;
 	background-color: #ffffff0d;
 	outline: 2px solid #ffffff14;
 	border-radius: 100px;

@@ -3,6 +3,7 @@
 
 mod app_state;
 mod dialogs;
+mod localization;
 mod inject;
 mod launch_request;
 mod launcher;
@@ -187,23 +188,23 @@ fn ensure_tray(app_handle: &tauri::AppHandle, state: &AppState) -> Result<(), St
     if state.is_tray_icon_visible() {
         return Ok(());
     }
+    let show_label = localization::get_translation("launcher.tray.show.name")
+        .unwrap_or_else(|| "Show Launcher".to_string());
+    let exit_label = localization::get_translation("launcher.tray.exit.name")
+        .unwrap_or_else(|| "Exit".to_string());
+    let tooltip = localization::get_translation("launcher.tray.tooltip.name")
+        .unwrap_or_else(|| "Latite Client Launcher".to_string());
 
     let tray_menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new(
-            TRAY_SHOW_MENU_ITEM_ID.to_string(),
-            "Show Launcher",
-        ))
+        .add_item(CustomMenuItem::new(TRAY_SHOW_MENU_ITEM_ID.to_string(), show_label))
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new(
-            TRAY_EXIT_MENU_ITEM_ID.to_string(),
-            "Exit",
-        ));
+        .add_item(CustomMenuItem::new(TRAY_EXIT_MENU_ITEM_ID.to_string(), exit_label));
 
     let tray_app_handle = app_handle.clone();
 
     SystemTray::new()
         .with_id(TRAY_ID)
-        .with_tooltip("Latite Client Launcher")
+        .with_tooltip(&tooltip)
         .with_menu(tray_menu)
         .on_event(move |event| {
             handle_system_tray_event(&tray_app_handle, event);

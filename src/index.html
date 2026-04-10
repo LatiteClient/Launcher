@@ -16,7 +16,7 @@
 			<div class="header" data-tauri-drag-region>
 				<div class="brand">
 					<img loading="lazy" src="./img/latite.png" class="logoImg" />
-					<div class="name">Latite Client</div>
+					<div class="name" data-i18n="launcher.brand.name">Latite Client</div>
 				</div>
 				<div class="windowControls">
 					<img loading="lazy" src="./img/minimize.svg" class="windowControl" onclick="minimizeWindow()" />
@@ -184,10 +184,10 @@
 											data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name"
 											autocomplete="off" />
 									</div>
-									<div class="pasteBtn" id="pasteLink">
-										<img src="./img/clipboard-solid-full.svg">
-										<p class="pasteBtnText">Paste</p>
-									</div>
+										<div class="pasteBtn" id="pasteLink">
+											<img src="./img/clipboard-solid-full.svg">
+											<p class="pasteBtnText" data-i18n="launcher.settings.paste.name">Paste</p>
+										</div>
 								</label>
 								<button type="button" id="browseCustomDll" class="customDllActionButton"
 									data-i18n="launcher.settings.customDllBrowse.name">
