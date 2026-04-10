@@ -60,7 +60,7 @@
     "launcher.status.preparingDll.name": "Status: Unable to prepare DLL",
     "launcher.status.injectionError.name": "Status: Injection failed",
     "launcher.status.invalidDllPath.name": "Status: Invalid DLL path",
-    "launcher.error.customDllMissing.name": "Enter a DLL path or URL before launching.",
+    "launcher.error.customDllMissing.name": "You have turned on Custom DLLs. Please enter a valid DLL path or URL before launching.",
     "launcher.error.customDllInvalid.name": "Enter a valid DLL path or URL ending in .dll.",
     "launcher.error.injectionInProgress.name": "Injection is already in progress. Please wait until the launcher returns to idle.",
     "launcher.error.prepareDll.name": "Could not prepare the DLL for injection.\n\n{{detail}}",

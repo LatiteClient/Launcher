@@ -39,7 +39,6 @@ const customDllInputOption = document.getElementById("customDllInputOption");
 const customDllInput = document.getElementById("customDllPath");
 const pasteLinkBtn = document.getElementById("pasteLink");
 const browseCustomDllButton = document.getElementById("browseCustomDll");
-const saveCustomDllButton = document.getElementById("saveCustomDll");
 const launcherLanguageSelect = document.getElementById("launcherLanguage");
 const launcherLanguageCustomSelect = document.getElementById(
   "launcherLanguageCustomSelect",
@@ -61,8 +60,6 @@ let currentSystemLocale = DEFAULT_LOCALE;
 let activeStatusMessage = INITIAL_STATUS_MESSAGE;
 let statusUpdateInProgress = false;
 let pendingStatusUpdate = null;
-let isShowingCustomDllSavedState = false;
-let customDllSavedStateTimeout = null;
 let closeWindowTimer = null;
 let isCloseWindowInProgress = false;
 
@@ -176,16 +173,6 @@ function createStatusElement(message, className = "status-message") {
   element.dataset.statusKey = message.key;
   element.textContent = translateUiMessage(message);
   return element;
-}
-
-function updateCustomDllSaveButtonLabel() {
-  if (!saveCustomDllButton) {
-    return;
-  }
-
-  saveCustomDllButton.textContent = isShowingCustomDllSavedState
-    ? t("launcher.settings.customDllSaved.name")
-    : t("launcher.settings.customDllSave.name");
 }
 
 function getLauncherLanguageOptions() {
@@ -341,7 +328,6 @@ function applyTranslations() {
   });
 
   renderLanguageOptions();
-  updateCustomDllSaveButtonLabel();
 }
 
 async function showLocalizedDialog(dialog) {
@@ -499,9 +485,6 @@ function setCustomDllFieldEnabled(enabled) {
   if (browseCustomDllButton) {
     browseCustomDllButton.disabled = !enabled;
   }
-  if (saveCustomDllButton) {
-    saveCustomDllButton.disabled = !enabled || isShowingCustomDllSavedState;
-  }
 }
 
 async function loadSavedCustomDllPath() {
@@ -524,27 +507,6 @@ async function saveCustomDllPath(value) {
     id: CUSTOM_DLL_PATH_OPTION_ID,
     value,
   });
-}
-
-function showCustomDllSavedState() {
-  if (!saveCustomDllButton) {
-    return;
-  }
-
-  isShowingCustomDllSavedState = true;
-  updateCustomDllSaveButtonLabel();
-  saveCustomDllButton.disabled = true;
-
-  if (customDllSavedStateTimeout) {
-    clearTimeout(customDllSavedStateTimeout);
-  }
-
-  customDllSavedStateTimeout = setTimeout(() => {
-    isShowingCustomDllSavedState = false;
-    updateCustomDllSaveButtonLabel();
-    saveCustomDllButton.disabled = !useCustomDllInput?.checked;
-    customDllSavedStateTimeout = null;
-  }, 1200);
 }
 
 async function updateLauncherLanguagePreference(value) {
@@ -677,25 +639,22 @@ function registerPrimaryEventListeners() {
     customDllInput.value = Array.isArray(selected) ? selected[0] : selected;
   });
 
-  saveCustomDllButton?.addEventListener("click", async () => {
-    try {
-      await saveCustomDllPath(customDllInput?.value.trim() ?? "");
-      showCustomDllSavedState();
-    } catch (error) {
-      console.error("Failed to save custom DLL path:", error);
-    }
-  });
-
   pasteLinkBtn?.addEventListener("click", async () => {
     try {
       const clipboardText = await readClipboardText();
       if (clipboardText && customDllInput) {
         customDllInput.value = clipboardText;
-        await saveCustomDllPath(clipboardText.trim());
-        showCustomDllSavedState();
       }
     } catch (error) {
       console.error("Failed to read clipboard:", error);
+    }
+  });
+
+  customDllInput?.addEventListener("input", async () => {
+    try {
+      await saveCustomDllPath(customDllInput.value.trim());
+    } catch (error) {
+      console.error("Failed to auto-save custom DLL path:", error);
     }
   });
 

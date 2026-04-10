@@ -177,11 +177,12 @@
 							<!-- <span class="settingFieldLabel" data-i18n="launcher.settings.customDllPath.name">
 								Custom DLL path or URL
 							</span> -->
-							<div class="customDllInputRow">
+							<div class="customDllInputRow" style="margin-top: 6px;">
 								<label class="customDLLPathFieldContainer">
 									<div class="customDllInput">
 										<input type="text" id="customDllPath" placeholder="Enter a DLL path or URL"
-											data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name" />
+											data-i18n-placeholder="launcher.settings.customDllPathPlaceholder.name"
+											autocomplete="off" />
 									</div>
 									<div class="pasteBtn" id="pasteLink">
 										<img src="./img/clipboard-solid-full.svg">
@@ -191,10 +192,6 @@
 								<button type="button" id="browseCustomDll" class="customDllActionButton"
 									data-i18n="launcher.settings.customDllBrowse.name">
 									Browse
-								</button>
-								<button type="button" id="saveCustomDll" class="customDllActionButton primary"
-									data-i18n="launcher.settings.customDllSave.name">
-									Save
 								</button>
 							</div>
 						</label>
