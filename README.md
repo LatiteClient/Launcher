@@ -12,7 +12,6 @@ The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclien
 - [x] Close after injected
 - [x] Status Text
 - [x] Option to use Latite Nightly/Debug
-- [ ] Add Discord RPC?
 
 ## Recommended IDE Setup
 
