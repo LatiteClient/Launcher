@@ -384,7 +384,7 @@ pub async fn check_for_updates(
                 "Latest launcher version: {latest_version}, Current launcher version: {current_version}"
             );
 
-            if current_version != latest_version {
+            if String::from("v") + current_version != latest_version {
                 ui::emit_dialog(
                     app_handle,
                     &UiDialog::info("launcher.dialog.updateAvailable.name")
