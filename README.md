@@ -2,6 +2,8 @@
 
 The new, Tauri-based launcher for [Latite Client](https://github.com/latiteclient/Latite).
 
+<img src="https://latite.net/sources/launcher.png" width="70%">
+
 # TODO
 
 - [x] Offline Latite injection
