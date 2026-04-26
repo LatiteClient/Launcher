@@ -21,7 +21,7 @@ const LANGUAGE_FALLBACKS = {
 };
 const INITIAL_STATUS_MESSAGE = {
 	key: "launcher.status.idle.name",
-	vars: {},
+	args: [],
 };
 
 const localeModules = import.meta.glob("./locales/*.json", { eager: true });
@@ -145,8 +145,40 @@ function resolveLocale(preference, systemLocale) {
 	return resolveLocaleCandidate(systemLocale);
 }
 
-function t(key, vars) {
-	return i18next.t(key, vars);
+function normalizeTranslationArgs(args) {
+	if (Array.isArray(args)) {
+		return args;
+	}
+
+	if (args === undefined || args === null) {
+		return [];
+	}
+
+	if (typeof args === "object") {
+		return Object.values(args);
+	}
+
+	return [args];
+}
+
+function interpolateTranslation(template, args) {
+	const normalizedArgs = normalizeTranslationArgs(args);
+	let argIndex = 0;
+
+	return template.replace(/\{\}/g, () => {
+		if (argIndex >= normalizedArgs.length) {
+			return "{}";
+		}
+
+		const value = normalizedArgs[argIndex];
+		argIndex += 1;
+		return String(value);
+	});
+}
+
+function t(key, args) {
+	const translation = i18next.t(key, { skipInterpolation: true });
+	return interpolateTranslation(translation, args);
 }
 
 function normalizeUiMessage(message) {
@@ -159,13 +191,18 @@ function normalizeUiMessage(message) {
 			typeof message.key === "string"
 				? message.key
 				: INITIAL_STATUS_MESSAGE.key,
-		vars: message.vars ?? {},
+		args:
+			Array.isArray(message.args) ||
+			message.args === undefined ||
+			message.args === null
+				? message.args ?? []
+				: normalizeTranslationArgs(message.args ?? message.vars),
 	};
 }
 
 function translateUiMessage(message) {
 	const normalizedMessage = normalizeUiMessage(message);
-	return t(normalizedMessage.key, normalizedMessage.vars);
+	return t(normalizedMessage.key, normalizedMessage.args);
 }
 
 function createStatusElement(message, className = "status-message") {
@@ -416,11 +453,11 @@ async function showLocalizedDialog(dialog) {
 	});
 }
 
-async function showLocalizedError(key, vars) {
+async function showLocalizedError(key, args) {
 	await showLocalizedDialog({
 		level: "error",
 		key,
-		vars,
+		args,
 	});
 }
 

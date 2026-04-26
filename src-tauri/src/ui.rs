@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
@@ -9,20 +7,20 @@ pub const DIALOG_EVENT: &str = "ui_dialog";
 #[serde(rename_all = "camelCase")]
 pub struct UiMessage {
     pub key: String,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub vars: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub args: Vec<String>,
 }
 
 impl UiMessage {
     pub fn new(key: impl Into<String>) -> Self {
         Self {
             key: key.into(),
-            vars: BTreeMap::new(),
+            args: Vec::new(),
         }
     }
 
-    pub fn with_var(mut self, key: impl Into<String>, value: impl ToString) -> Self {
-        self.vars.insert(key.into(), value.to_string());
+    pub fn with_arg(mut self, value: impl ToString) -> Self {
+        self.args.push(value.to_string());
         self
     }
 }
@@ -39,8 +37,8 @@ pub enum UiDialogLevel {
 pub struct UiDialog {
     pub level: UiDialogLevel,
     pub key: String,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub vars: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub args: Vec<String>,
 }
 
 impl UiDialog {
@@ -48,7 +46,7 @@ impl UiDialog {
         Self {
             level: UiDialogLevel::Info,
             key: key.into(),
-            vars: BTreeMap::new(),
+            args: Vec::new(),
         }
     }
 
@@ -56,12 +54,12 @@ impl UiDialog {
         Self {
             level: UiDialogLevel::Error,
             key: key.into(),
-            vars: BTreeMap::new(),
+            args: Vec::new(),
         }
     }
 
-    pub fn with_var(mut self, key: impl Into<String>, value: impl ToString) -> Self {
-        self.vars.insert(key.into(), value.to_string());
+    pub fn with_arg(mut self, value: impl ToString) -> Self {
+        self.args.push(value.to_string());
         self
     }
 }

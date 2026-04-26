@@ -127,7 +127,7 @@ impl StatusAnimation {
             let mut dot_index = 0;
 
             while animation_flag.load(Ordering::Relaxed) {
-                let current_status = UiMessage::new(label_key).with_var("dots", dots[dot_index]);
+                let current_status = UiMessage::new(label_key).with_arg(dots[dot_index]);
                 status.emit(current_status);
                 dot_index = (dot_index + 1) % dots.len();
                 thread::sleep(STATUS_ANIMATION_DELAY);
@@ -184,14 +184,14 @@ pub async fn inject(
             report_failure(
                 &status,
                 STATUS_INVALID_DLL_PATH,
-                UiDialog::error("launcher.error.prepareDll.name").with_var("detail", &error),
+                UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
                 error,
             )
         } else {
             report_failure(
                 &status,
                 STATUS_PREPARING_DLL,
-                UiDialog::error("launcher.error.prepareDll.name").with_var("detail", &error),
+                UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
                 error,
             )
         }
@@ -206,7 +206,7 @@ pub async fn inject(
                 &status,
                 STATUS_INJECTION_ERROR,
                 UiDialog::error("launcher.error.launchTaskFailed.name")
-                    .with_var("detail", &message),
+                    .with_arg(&message),
                 message,
             )
         })?
@@ -239,7 +239,7 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
             return Err(report_failure(
                 &status,
                 STATUS_INJECT_FAILED,
-                UiDialog::error("launcher.error.injectFailed.name").with_var("detail", &error),
+                UiDialog::error("launcher.error.injectFailed.name").with_arg(&error),
                 error,
             ));
         }
@@ -255,8 +255,8 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
                 &status,
                 STATUS_INJECT_FAILED,
                 UiDialog::error("launcher.error.injectedProcessExited.name")
-                    .with_var("pid", pid)
-                    .with_var("exitCode", format!("{exit_code:#x}")),
+                    .with_arg(pid)
+                    .with_arg(format!("{exit_code:#x}")),
                 format!(
                     "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
                 ),
@@ -277,7 +277,7 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
         report_failure(
             status,
             STATUS_INJECT_FAILED,
-            UiDialog::error("launcher.error.injectFailed.name").with_var("detail", &error),
+            UiDialog::error("launcher.error.injectFailed.name").with_arg(&error),
             error,
         )
     })? {
@@ -292,7 +292,7 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
         return Err(report_failure(
             status,
             STATUS_LAUNCH_FAILED,
-            UiDialog::error("launcher.error.openMinecraft.name").with_var("detail", &error),
+            UiDialog::error("launcher.error.openMinecraft.name").with_arg(&error),
             error,
         ));
     }
@@ -301,7 +301,7 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
         report_failure(
             status,
             STATUS_MINECRAFT_NOT_FOUND,
-            UiDialog::error("launcher.error.minecraftNotFound.name").with_var("detail", &error),
+            UiDialog::error("launcher.error.minecraftNotFound.name").with_arg(&error),
             error,
         )
     })?;
@@ -363,9 +363,7 @@ fn monitor_process_after_injection(
             Err(report_failure(
                 status,
                 STATUS_VERIFY_FAILED,
-                UiDialog::error("launcher.error.verifyInjection.name")
-                    .with_var("detail", &error)
-                    .with_var("pid", target_pid),
+                UiDialog::error("launcher.error.verifyInjection.name").with_arg(&error),
                 format!(
                     "Failed to confirm Minecraft process {target_pid} stayed open after injection: {error}"
                 ),
@@ -388,7 +386,7 @@ pub async fn check_for_updates(
                 ui::emit_dialog(
                     app_handle,
                     &UiDialog::info("launcher.dialog.updateAvailable.name")
-                        .with_var("latestVersion", latest_version),
+                        .with_arg(latest_version),
                 );
             }
 
