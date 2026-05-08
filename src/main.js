@@ -18,7 +18,20 @@ const STATUS_EVENT = "inject_status";
 const DIALOG_EVENT = "ui_dialog";
 const LANGUAGE_FALLBACKS = {
 	es: "es_ES",
+	fa: "fa_IR",
 };
+const RTL_LANGUAGE_CODES = new Set([
+	"ar",
+	"ckb",
+	"dv",
+	"fa",
+	"he",
+	"ps",
+	"sd",
+	"ug",
+	"ur",
+	"yi",
+]);
 const INITIAL_STATUS_MESSAGE = {
 	key: "launcher.status.idle.name",
 	args: [],
@@ -134,6 +147,16 @@ function resolveLocaleCandidate(localeId) {
 		return mappedLocale;
 	}
 
+	const languageLocale = Object.keys(localeRegistry)
+		.sort((left, right) => left.localeCompare(right))
+		.find(
+			(registeredLocale) => registeredLocale.split("_")[0] === languageCode,
+		);
+
+	if (languageLocale) {
+		return languageLocale;
+	}
+
 	return DEFAULT_LOCALE;
 }
 
@@ -143,6 +166,23 @@ function resolveLocale(preference, systemLocale) {
 	}
 
 	return resolveLocaleCandidate(systemLocale);
+}
+
+function getLocaleDirection(localeId) {
+	const normalized = normalizeLocaleId(localeId) ?? DEFAULT_LOCALE;
+	const configuredDirection = localeRegistry[normalized]?.direction;
+
+	if (configuredDirection === "rtl" || configuredDirection === "ltr") {
+		return configuredDirection;
+	}
+
+	const [languageCode] = normalized.split("_");
+	return RTL_LANGUAGE_CODES.has(languageCode) ? "rtl" : "ltr";
+}
+
+function applyLocaleAttributes() {
+	document.documentElement.lang = i18next.language.replace(/_/g, "-");
+	document.documentElement.dir = getLocaleDirection(i18next.language);
 }
 
 function normalizeTranslationArgs(args) {
@@ -413,7 +453,7 @@ function renderLanguageOptions() {
 }
 
 function applyTranslations() {
-	document.documentElement.lang = i18next.language.replace("_", "-");
+	applyLocaleAttributes();
 	document.title = t("launcher.meta.title.name");
 
 	document.querySelectorAll("[data-i18n]").forEach((element) => {
