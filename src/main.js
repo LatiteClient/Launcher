@@ -625,6 +625,15 @@ async function saveCustomDllPath(value) {
 	});
 }
 
+async function setAndSaveCustomDllPath(value) {
+	if (!customDllInput) {
+		return;
+	}
+
+	customDllInput.value = value;
+	await saveCustomDllPath(value.trim());
+}
+
 async function updateLauncherLanguagePreference(value) {
 	const selectedValue = normalizeLocalePreference(value);
 
@@ -752,14 +761,20 @@ function registerPrimaryEventListeners() {
 			return;
 		}
 
-		customDllInput.value = Array.isArray(selected) ? selected[0] : selected;
+		try {
+			await setAndSaveCustomDllPath(
+				Array.isArray(selected) ? selected[0] : selected,
+			);
+		} catch (error) {
+			console.error("Failed to save selected custom DLL path:", error);
+		}
 	});
 
 	pasteLinkBtn?.addEventListener("click", async () => {
 		try {
 			const clipboardText = await readClipboardText();
 			if (clipboardText && customDllInput) {
-				customDllInput.value = clipboardText;
+				await setAndSaveCustomDllPath(clipboardText);
 			}
 		} catch (error) {
 			console.error("Failed to read clipboard:", error);
