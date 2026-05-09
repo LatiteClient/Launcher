@@ -1,10 +1,10 @@
-use std::ffi::{c_void, CStr};
+use std::ffi::{c_void, CStr, OsString};
 use std::mem::size_of;
-use std::os::windows::ffi::OsStrExt;
-use std::path::Path;
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use windows::core::s;
+use windows::core::{s, PWSTR};
 use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT};
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
@@ -15,9 +15,10 @@ use windows::Win32::System::Memory::{
     VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
 };
 use windows::Win32::System::Threading::{
-    CreateRemoteThread, GetExitCodeProcess, GetExitCodeThread, OpenProcess, WaitForSingleObject,
-    INFINITE, PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_SYNCHRONIZE,
-    PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
+    CreateRemoteThread, GetExitCodeProcess, GetExitCodeThread, OpenProcess,
+    QueryFullProcessImageNameW, WaitForSingleObject, INFINITE, PROCESS_CREATE_THREAD,
+    PROCESS_NAME_WIN32, PROCESS_QUERY_INFORMATION, PROCESS_QUERY_LIMITED_INFORMATION,
+    PROCESS_SYNCHRONIZE, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
 };
 
 type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
@@ -61,6 +62,10 @@ pub fn find_process_id(process_name: &str) -> Result<Option<u32>, String> {
     unsafe { find_process_id_inner(process_name) }
 }
 
+pub fn get_process_image_path(pid: u32) -> Result<PathBuf, String> {
+    unsafe { get_process_image_path_inner(pid) }
+}
+
 unsafe fn open_target_process_inner(pid: u32) -> Result<TargetProcess, String> {
     let process_handle = OpenProcess(
         PROCESS_CREATE_THREAD
@@ -78,6 +83,32 @@ unsafe fn open_target_process_inner(pid: u32) -> Result<TargetProcess, String> {
         pid,
         handle: OwnedHandle::new(process_handle),
     })
+}
+
+unsafe fn get_process_image_path_inner(pid: u32) -> Result<PathBuf, String> {
+    let process_handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+        .map_err(|error| format!("Failed to open process {pid} for image path query: {error}"))?;
+    let process_handle = OwnedHandle::new(process_handle);
+
+    let mut path_buffer = vec![0u16; 32_768];
+    let mut path_length = u32::try_from(path_buffer.len())
+        .expect("process image path buffer length should fit in u32");
+
+    QueryFullProcessImageNameW(
+        process_handle.raw(),
+        PROCESS_NAME_WIN32,
+        PWSTR(path_buffer.as_mut_ptr()),
+        &raw mut path_length,
+    )
+    .map_err(|error| format!("Failed to query process {pid} image path: {error}"))?;
+
+    path_buffer.truncate(path_length as usize);
+
+    if path_buffer.is_empty() {
+        return Err(format!("Process {pid} returned an empty image path."));
+    }
+
+    Ok(PathBuf::from(OsString::from_wide(&path_buffer)))
 }
 
 unsafe fn inject_dll_inner(target_process: &TargetProcess, dll_path: &Path) -> Result<(), String> {

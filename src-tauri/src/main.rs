@@ -3,15 +3,17 @@
 
 mod app_state;
 mod dialogs;
-mod localization;
 mod inject;
+mod latite_dll;
 mod launch_request;
 mod launcher;
+mod localization;
 mod logging;
 mod options;
 mod paths;
 mod release;
 mod ui;
+mod version_info;
 
 use app_state::AppState;
 use launch_request::{BuildKind, InjectRequest};

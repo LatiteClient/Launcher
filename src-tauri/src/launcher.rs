@@ -14,9 +14,11 @@ use std::{
 use crate::{
     app_state::AppState,
     inject as injector,
+    latite_dll::{self, LatiteDllMetadata},
     launch_request::{BuildKind, InjectRequest},
     paths, release,
     ui::{self, UiDialog, UiMessage},
+    version_info,
 };
 use tauri::{AppHandle, Manager};
 
@@ -35,6 +37,7 @@ const STATUS_VERIFY_FAILED: &str = "launcher.status.verifyFailed.name";
 const STATUS_PREPARING_DLL: &str = "launcher.status.preparingDll.name";
 const STATUS_INJECTION_ERROR: &str = "launcher.status.injectionError.name";
 const STATUS_INVALID_DLL_PATH: &str = "launcher.status.invalidDllPath.name";
+const STATUS_UNSUPPORTED_MINECRAFT: &str = "launcher.status.unsupportedMinecraft.name";
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
@@ -158,6 +161,11 @@ enum ProcessMonitorOutcome {
     Exited(u32),
 }
 
+struct ResolvedDll {
+    path: PathBuf,
+    metadata: Option<LatiteDllMetadata>,
+}
+
 pub async fn inject(
     state: &AppState,
     request: InjectRequest,
@@ -174,7 +182,7 @@ pub async fn inject(
     })?;
     crate::log_info!("Injecting...");
 
-    let dll_path = resolve_dll_path(state, request).await.map_err(|error| {
+    let resolved_dll = resolve_dll(state, request).await.map_err(|error| {
         // Distinguish between invalid DLL path and DLL preparation errors
         if error.contains("does not exist")
             || error.contains("is not a file")
@@ -198,21 +206,22 @@ pub async fn inject(
     })?;
     let worker_app_handle = app_handle.clone();
 
-    tauri::async_runtime::spawn_blocking(move || inject_with_status(dll_path, worker_app_handle))
-        .await
-        .map_err(|error| {
-            let message = format!("Injection task failed: {error}");
-            report_failure(
-                &status,
-                STATUS_INJECTION_ERROR,
-                UiDialog::error("launcher.error.launchTaskFailed.name")
-                    .with_arg(&message),
-                message,
-            )
-        })?
+    tauri::async_runtime::spawn_blocking(move || {
+        inject_with_status(resolved_dll, worker_app_handle)
+    })
+    .await
+    .map_err(|error| {
+        let message = format!("Injection task failed: {error}");
+        report_failure(
+            &status,
+            STATUS_INJECTION_ERROR,
+            UiDialog::error("launcher.error.launchTaskFailed.name").with_arg(&message),
+            message,
+        )
+    })?
 }
 
-fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), LaunchError> {
+fn inject_with_status(resolved_dll: ResolvedDll, app_handle: AppHandle) -> Result<(), LaunchError> {
     let status = StatusEmitter::new(app_handle);
     let (pid, was_already_running) = find_or_launch_minecraft(&status)?;
 
@@ -223,10 +232,14 @@ fn inject_with_status(dll_path: PathBuf, app_handle: AppHandle) -> Result<(), La
         thread::sleep(MINECRAFT_LOADING_DELAY);
     }
 
+    if let Some(metadata) = &resolved_dll.metadata {
+        verify_minecraft_supported(pid, metadata, &status)?;
+    }
+
     let injection_started_at = Instant::now();
     let injection_animation = StatusAnimation::start(status.clone(), STATUS_INJECTING);
     let injection_result = injector::open_target_process(pid).and_then(|target_process| {
-        injector::inject_dll(&target_process, &dll_path)?;
+        injector::inject_dll(&target_process, &resolved_dll.path)?;
         Ok(target_process)
     });
 
@@ -307,6 +320,64 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
     })?;
 
     Ok((pid, false))
+}
+
+fn verify_minecraft_supported(
+    pid: u32,
+    metadata: &LatiteDllMetadata,
+    status: &StatusEmitter,
+) -> Result<(), LaunchError> {
+    let minecraft_path = injector::get_process_image_path(pid).map_err(|error| {
+        report_failure(
+            status,
+            STATUS_VERIFY_FAILED,
+            UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
+            error,
+        )
+    })?;
+    let minecraft_version = version_info::get_file_version(&minecraft_path).map_err(|error| {
+        report_failure(
+            status,
+            STATUS_VERIFY_FAILED,
+            UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
+            error,
+        )
+    })?;
+
+    crate::log_info!(
+        "Detected Minecraft version {minecraft_version} from {}.",
+        minecraft_path.display()
+    );
+
+    if metadata.supports_minecraft_version(&minecraft_version) {
+        crate::log_info!(
+            "Latite DLL version {} supports Minecraft version {minecraft_version}.",
+            metadata.version()
+        );
+        return Ok(());
+    }
+
+    let supported_versions = format_supported_versions(metadata.supported_minecraft_versions());
+    Err(report_failure(
+        status,
+        STATUS_UNSUPPORTED_MINECRAFT,
+        UiDialog::error("launcher.error.unsupportedMinecraftVersion.name")
+            .with_arg(&minecraft_version)
+            .with_arg(metadata.version())
+            .with_arg(&supported_versions),
+        format!(
+            "Latite DLL version {} does not support Minecraft version {minecraft_version}. Supported Minecraft versions: {supported_versions}",
+            metadata.version()
+        ),
+    ))
+}
+
+fn format_supported_versions(versions: &[String]) -> String {
+    if versions.is_empty() {
+        "none reported".to_string()
+    } else {
+        versions.join(", ")
+    }
 }
 
 fn report_failure(
@@ -396,11 +467,11 @@ pub async fn check_for_updates(
     }
 }
 
-async fn resolve_dll_path(state: &AppState, request: InjectRequest) -> Result<PathBuf, String> {
+async fn resolve_dll(state: &AppState, request: InjectRequest) -> Result<ResolvedDll, String> {
     let InjectRequest { dll_path, build } = request;
 
     match dll_path {
-        Some(dll_path) => resolve_custom_dll_path(dll_path).await,
+        Some(dll_path) => resolve_custom_dll(dll_path).await,
         None => prepare_latite_dll(state, resolve_latite_build(state, build)?).await,
     }
 }
@@ -415,12 +486,12 @@ fn resolve_latite_build(
     }
 }
 
-async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<PathBuf, String> {
+async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<ResolvedDll, String> {
     let build_path = paths::get_latite_build_path(build)?;
     let dll_path = build_path.join(release::latite_dll_file_name(build));
 
     match build {
-        BuildKind::Release => prepare_release_dll(state, &build_path).await?,
+        BuildKind::Release => prepare_release_dll(state, &build_path, &dll_path).await?,
         BuildKind::Nightly | BuildKind::Debug => prepare_mutable_build(build, &build_path).await?,
     }
 
@@ -431,11 +502,35 @@ async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<PathBu
         ));
     }
 
-    Ok(dll_path)
+    let metadata = latite_dll::read_metadata(&dll_path)?;
+    crate::log_info!(
+        "Prepared {} DLL version {}. Supported Minecraft versions: {}.",
+        release::build_display_name(build),
+        metadata.version(),
+        format_supported_versions(metadata.supported_minecraft_versions())
+    );
+
+    if build == BuildKind::Release {
+        state.set_last_used_version(Some(metadata.version().to_string()))?;
+    }
+
+    Ok(ResolvedDll {
+        path: dll_path,
+        metadata: Some(metadata),
+    })
 }
 
-async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), String> {
+async fn prepare_release_dll(
+    state: &AppState,
+    build_path: &Path,
+    dll_path: &Path,
+) -> Result<(), String> {
     let previous_version = state.get_last_used_version()?;
+    let cached_metadata = read_cached_latite_metadata(dll_path);
+    let cached_version = cached_metadata
+        .as_ref()
+        .map(|metadata| metadata.version())
+        .or(previous_version.as_deref());
     let latest_dll_version = match release::fetch_latest_release_name(release::RELEASE_REPO).await {
         Ok(version) => {
             crate::log_info!("Latest release version: {version}");
@@ -448,20 +543,42 @@ async fn prepare_release_dll(state: &AppState, build_path: &Path) -> Result<(), 
     };
 
     let release_cached = release::has_required_assets(BuildKind::Release, build_path);
-    let has_newer_release = latest_dll_version
-        .as_deref()
-        .is_some_and(|version| previous_version.as_deref() != Some(version));
-    let needs_download = !release_cached || has_newer_release;
+    let has_newer_release = latest_dll_version.as_deref().is_some_and(|version| {
+        cached_version.map_or(true, |cached_version| {
+            !latite_dll::versions_equivalent(cached_version, version)
+        })
+    });
+    let needs_download = !release_cached || cached_metadata.is_none() || has_newer_release;
 
     if needs_download {
         release::download_build(BuildKind::Release, build_path).await?;
-
-        if let Some(version) = latest_dll_version {
-            state.set_last_used_version(Some(version))?;
-        }
     }
 
     Ok(())
+}
+
+fn read_cached_latite_metadata(dll_path: &Path) -> Option<LatiteDllMetadata> {
+    if !dll_path.is_file() {
+        return None;
+    }
+
+    match latite_dll::read_metadata(dll_path) {
+        Ok(metadata) => {
+            crate::log_info!(
+                "Cached Latite DLL version {} found at {}.",
+                metadata.version(),
+                dll_path.display()
+            );
+            Some(metadata)
+        }
+        Err(error) => {
+            crate::log_error!(
+                "Failed to read cached Latite DLL metadata from {}: {error}",
+                dll_path.display()
+            );
+            None
+        }
+    }
 }
 
 async fn prepare_mutable_build(build: BuildKind, build_path: &Path) -> Result<(), String> {
@@ -516,15 +633,20 @@ fn validate_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
         .map_err(|error| format!("Failed to resolve DLL path {}: {error}", dll_path.display()))
 }
 
-async fn resolve_custom_dll_path(dll_path: String) -> Result<PathBuf, String> {
+async fn resolve_custom_dll(dll_path: String) -> Result<ResolvedDll, String> {
     let dll_path = dll_path.trim().to_string();
 
-    if is_custom_dll_url(&dll_path) {
+    let path = if is_custom_dll_url(&dll_path) {
         validate_custom_dll_url(&dll_path)?;
-        return download_custom_dll(&dll_path).await;
-    }
+        download_custom_dll(&dll_path).await?
+    } else {
+        validate_custom_dll_path(dll_path)?
+    };
 
-    validate_custom_dll_path(dll_path)
+    Ok(ResolvedDll {
+        path,
+        metadata: None,
+    })
 }
 
 fn is_custom_dll_url(value: &str) -> bool {
