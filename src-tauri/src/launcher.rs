@@ -44,6 +44,8 @@ const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
 const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
 const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
 const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(8);
+const MINECRAFT_LOADED_MODULE_COUNT: usize = 165;
+const MINECRAFT_MODULE_POLL_DELAY: Duration = Duration::from_millis(100);
 const MINECRAFT_LOADING_DELAY: Duration = Duration::from_secs(6);
 
 #[derive(Debug)]
@@ -411,8 +413,38 @@ fn monitor_process_after_injection(
     status: &StatusEmitter,
 ) -> Result<ProcessMonitorOutcome, LaunchError> {
     let _animation: StatusAnimation = StatusAnimation::start(status.clone(), STATUS_FINALIZING);
-    let monitor_started_at = Instant::now();
     let target_pid = target_process.pid();
+
+    match injector::wait_for_process_module_count_above(
+        target_process,
+        MINECRAFT_LOADED_MODULE_COUNT,
+        MINECRAFT_MODULE_POLL_DELAY,
+    ) {
+        Ok(injector::ModuleLoadWaitOutcome::Loaded(module_count)) => {
+            crate::log_info!(
+                "Process {target_pid} loaded {module_count} modules, starting post-injection monitoring."
+            );
+        }
+        Ok(injector::ModuleLoadWaitOutcome::Exited(exit_code)) => {
+            crate::log_info!(
+                "Process {target_pid} exited before reaching more than {MINECRAFT_LOADED_MODULE_COUNT} loaded modules with exit code {exit_code:#x}."
+            );
+            return Ok(ProcessMonitorOutcome::Exited(exit_code));
+        }
+        Err(error) => {
+            crate::log_error!("Failed to wait for process {target_pid} module load count: {error}");
+            return Err(report_failure(
+                status,
+                STATUS_VERIFY_FAILED,
+                UiDialog::error("launcher.error.verifyInjection.name").with_arg(&error),
+                format!(
+                    "Failed to wait for Minecraft process {target_pid} to finish loading before monitoring: {error}"
+                ),
+            ));
+        }
+    }
+
+    let monitor_started_at = Instant::now();
 
     match injector::wait_for_process_exit(target_process, POST_INJECTION_MONITOR_DURATION) {
         Ok(injector::ProcessWaitOutcome::Running) => {

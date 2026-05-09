@@ -2,13 +2,18 @@ use std::ffi::{c_void, CStr, OsString};
 use std::mem::size_of;
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::path::{Path, PathBuf};
+use std::thread;
 use std::time::Duration;
 
-use windows::core::{s, PWSTR};
-use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT};
+use windows::core::{s, Error as WindowsError, HRESULT, PWSTR};
+use windows::Win32::Foundation::{
+    CloseHandle, ERROR_BAD_LENGTH, ERROR_NO_MORE_FILES, HANDLE, WAIT_FAILED, WAIT_OBJECT_0,
+    WAIT_TIMEOUT, WIN32_ERROR,
+};
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
-    CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS,
+    CreateToolhelp32Snapshot, Module32First, Module32Next, Process32First, Process32Next,
+    MODULEENTRY32, PROCESSENTRY32, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, TH32CS_SNAPPROCESS,
 };
 use windows::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
 use windows::Win32::System::Memory::{
@@ -22,6 +27,7 @@ use windows::Win32::System::Threading::{
 };
 
 type ThreadStartRoutine = unsafe extern "system" fn(*mut c_void) -> u32;
+const MODULE_SNAPSHOT_RETRY_DELAY: Duration = Duration::from_millis(10);
 
 pub struct TargetProcess {
     pid: u32,
@@ -43,6 +49,11 @@ pub enum ProcessWaitOutcome {
     Exited(u32),
 }
 
+pub enum ModuleLoadWaitOutcome {
+    Loaded(usize),
+    Exited(u32),
+}
+
 pub fn open_target_process(pid: u32) -> Result<TargetProcess, String> {
     unsafe { open_target_process_inner(pid) }
 }
@@ -56,6 +67,16 @@ pub fn wait_for_process_exit(
     timeout: Duration,
 ) -> Result<ProcessWaitOutcome, String> {
     unsafe { wait_for_process_exit_inner(target_process, timeout) }
+}
+
+pub fn wait_for_process_module_count_above(
+    target_process: &TargetProcess,
+    module_count: usize,
+    poll_interval: Duration,
+) -> Result<ModuleLoadWaitOutcome, String> {
+    unsafe {
+        wait_for_process_module_count_above_inner(target_process, module_count, poll_interval)
+    }
 }
 
 pub fn find_process_id(process_name: &str) -> Result<Option<u32>, String> {
@@ -221,6 +242,95 @@ unsafe fn wait_for_process_exit_inner(
     Ok(ProcessWaitOutcome::Exited(process_exit_code))
 }
 
+unsafe fn wait_for_process_module_count_above_inner(
+    target_process: &TargetProcess,
+    module_count: usize,
+    poll_interval: Duration,
+) -> Result<ModuleLoadWaitOutcome, String> {
+    loop {
+        match wait_for_process_exit_inner(target_process, Duration::ZERO)? {
+            ProcessWaitOutcome::Running => {}
+            ProcessWaitOutcome::Exited(exit_code) => {
+                return Ok(ModuleLoadWaitOutcome::Exited(exit_code));
+            }
+        }
+
+        match count_process_modules_inner(target_process.pid()) {
+            Ok(loaded_modules) if loaded_modules > module_count => {
+                return Ok(ModuleLoadWaitOutcome::Loaded(loaded_modules));
+            }
+            Ok(_) => {}
+            Err(error) => match wait_for_process_exit_inner(target_process, Duration::ZERO)? {
+                ProcessWaitOutcome::Running => return Err(error),
+                ProcessWaitOutcome::Exited(exit_code) => {
+                    return Ok(ModuleLoadWaitOutcome::Exited(exit_code));
+                }
+            },
+        }
+
+        match wait_for_process_exit_inner(target_process, poll_interval)? {
+            ProcessWaitOutcome::Running => {}
+            ProcessWaitOutcome::Exited(exit_code) => {
+                return Ok(ModuleLoadWaitOutcome::Exited(exit_code));
+            }
+        }
+    }
+}
+
+unsafe fn count_process_modules_inner(pid: u32) -> Result<usize, String> {
+    let snapshot = create_module_snapshot(pid)?;
+    let mut entry = MODULEENTRY32 {
+        dwSize: u32::try_from(size_of::<MODULEENTRY32>())
+            .expect("MODULEENTRY32 size should fit in u32"),
+        ..Default::default()
+    };
+
+    if let Err(error) = Module32First(snapshot.raw(), &raw mut entry) {
+        if is_win32_error(&error, ERROR_NO_MORE_FILES) {
+            return Ok(0);
+        }
+
+        return Err(format!(
+            "Failed to enumerate modules for process {pid}: {error}"
+        ));
+    }
+
+    let mut count = 1;
+
+    loop {
+        if let Err(error) = Module32Next(snapshot.raw(), &raw mut entry) {
+            if is_win32_error(&error, ERROR_NO_MORE_FILES) {
+                return Ok(count);
+            }
+
+            return Err(format!(
+                "Failed to enumerate modules for process {pid}: {error}"
+            ));
+        }
+
+        count += 1;
+    }
+}
+
+unsafe fn create_module_snapshot(pid: u32) -> Result<OwnedHandle, String> {
+    let flags = TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32;
+
+    loop {
+        match CreateToolhelp32Snapshot(flags, pid) {
+            Ok(snapshot) => return Ok(OwnedHandle::new(snapshot)),
+            Err(error) if is_win32_error(&error, ERROR_BAD_LENGTH) => {
+                thread::sleep(MODULE_SNAPSHOT_RETRY_DELAY);
+                continue;
+            }
+            Err(error) => {
+                return Err(format!(
+                    "Failed to snapshot modules for process {pid}: {error}"
+                ));
+            }
+        }
+    }
+}
+
 unsafe fn find_process_id_inner(process_name: &str) -> Result<Option<u32>, String> {
     let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
         .map_err(|error| format!("Failed to snapshot running processes: {error}"))?;
@@ -260,6 +370,10 @@ fn process_name_from_entry(entry: &PROCESSENTRY32) -> String {
 
 fn win32_error(context: &str) -> String {
     format!("{context}: {}", windows::core::Error::from_win32())
+}
+
+fn is_win32_error(error: &WindowsError, code: WIN32_ERROR) -> bool {
+    error.code() == HRESULT::from_win32(code.0)
 }
 
 fn duration_to_wait_millis(duration: Duration) -> u32 {
