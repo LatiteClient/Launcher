@@ -9,7 +9,6 @@
     "launcher.home.openFolder.name": "Open Latite Folder",
     "launcher.settings.title.name": "Settings",
     "launcher.settings.launcherLanguageSection.name": "Launcher Language",
-    "launcher.settings.launcherLanguage.name": "Language",
     "launcher.settings.launcherLanguage.desc": "Use System Default to follow your operating system language automatically.",
     "launcher.settings.systemDefault.name": "System Default",
     "launcher.settings.latiteBuildSection.name": "Latite Build",
