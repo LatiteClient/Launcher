@@ -190,17 +190,25 @@ fn ensure_tray(app_handle: &tauri::AppHandle, state: &AppState) -> Result<(), St
     if state.is_tray_icon_visible() {
         return Ok(());
     }
-    let show_label = localization::get_translation("launcher.tray.show.name")
-        .unwrap_or_else(|| "Show Launcher".to_string());
-    let exit_label = localization::get_translation("launcher.tray.exit.name")
-        .unwrap_or_else(|| "Exit".to_string());
-    let tooltip = localization::get_translation("launcher.tray.tooltip.name")
-        .unwrap_or_else(|| "Latite Client Launcher".to_string());
+
+    let translate_tray_text = |key: &str, fallback: &str| {
+        localization::get_translation(key).unwrap_or_else(|| fallback.to_string())
+    };
+
+    let show_label = translate_tray_text("launcher.tray.show.name", "Show Launcher");
+    let exit_label = translate_tray_text("launcher.tray.exit.name", "Exit");
+    let tooltip = translate_tray_text("launcher.tray.tooltip.name", "Latite Client Launcher");
 
     let tray_menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new(TRAY_SHOW_MENU_ITEM_ID.to_string(), show_label))
+        .add_item(CustomMenuItem::new(
+            TRAY_SHOW_MENU_ITEM_ID.to_string(),
+            show_label,
+        ))
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new(TRAY_EXIT_MENU_ITEM_ID.to_string(), exit_label));
+        .add_item(CustomMenuItem::new(
+            TRAY_EXIT_MENU_ITEM_ID.to_string(),
+            exit_label,
+        ));
 
     let tray_app_handle = app_handle.clone();
 
