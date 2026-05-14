@@ -7,10 +7,6 @@ use crate::launch_request::BuildKind;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 struct Options {
-    rpc_enabled: bool,
-    rpc_show_server: bool,
-    rpc_show_mc_version: bool,
-    rpc_show_time_played: bool,
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
     use_custom_dll: bool,
@@ -108,10 +104,6 @@ impl OptionsStore {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            rpc_enabled: true,
-            rpc_show_server: true,
-            rpc_show_mc_version: true,
-            rpc_show_time_played: true,
             misc_hide_on_close: false,
             misc_close_after_injected: false,
             use_custom_dll: false,
@@ -126,10 +118,6 @@ impl Default for Options {
 impl Options {
     fn bool_option(&self, id: &str) -> Result<&bool, String> {
         match id {
-            "rpc_enabled" => Ok(&self.rpc_enabled),
-            "rpc_show_server" => Ok(&self.rpc_show_server),
-            "rpc_show_mc_version" => Ok(&self.rpc_show_mc_version),
-            "rpc_show_time_played" => Ok(&self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&self.misc_close_after_injected),
             "use_custom_dll" => Ok(&self.use_custom_dll),
@@ -139,10 +127,6 @@ impl Options {
 
     fn bool_option_mut(&mut self, id: &str) -> Result<&mut bool, String> {
         match id {
-            "rpc_enabled" => Ok(&mut self.rpc_enabled),
-            "rpc_show_server" => Ok(&mut self.rpc_show_server),
-            "rpc_show_mc_version" => Ok(&mut self.rpc_show_mc_version),
-            "rpc_show_time_played" => Ok(&mut self.rpc_show_time_played),
             "misc_hide_on_close" => Ok(&mut self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&mut self.misc_close_after_injected),
             "use_custom_dll" => Ok(&mut self.use_custom_dll),
