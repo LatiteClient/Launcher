@@ -14,6 +14,7 @@ const LOCALES: &[(&str, &str)] = &[
     ("nl_NL", include_str!("../../src/locales/nl_NL.json")),
     ("pl_PL", include_str!("../../src/locales/pl_PL.json")),
     ("pt_PT", include_str!("../../src/locales/pt_PT.json")),
+    ("ru_RU", include_str!("../../src/locales/ru_RU.json")),
 ];
 
 pub fn get_translation(key: &str) -> Option<String> {

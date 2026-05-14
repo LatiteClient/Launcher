@@ -1,6 +1,5 @@
 {
   "name": "Persian (IR)",
-  "direction": "rtl",
   "translations": {
     "launcher.meta.title.name": "لانچر لتیت کلاینت",
     "launcher.home.launch.name": "اجرا",
@@ -10,7 +9,6 @@
     "launcher.home.openFolder.name": "باز کردن فولدر لتیت",
     "launcher.settings.title.name": "تنظیمات",
     "launcher.settings.launcherLanguageSection.name": "زبان لانچر",
-    "launcher.settings.launcherLanguage.name": "زبان",
     "launcher.settings.launcherLanguage.desc": "برای استفاده خودکار زبان سیستم عامل، از گزینه پیش فرض سیستم استفاده کنید.",
     "launcher.settings.systemDefault.name": "پیش فرض سیستم",
     "launcher.settings.latiteBuildSection.name": "نوع نسخه لتیت",
@@ -26,11 +24,6 @@
     "launcher.settings.customDllBrowse.name": "جستجو",
     "launcher.settings.customDllSave.name": "ذخیره",
     "launcher.settings.customDllSaved.name": "دحیره شد",
-    "launcher.settings.discordRpcSection.name": "نمایش وضعیت در دیسکورد",
-    "launcher.settings.rpcEnabled.name": "همسان سازی با دیسکورد",
-    "launcher.settings.rpcShowServer.name": "نمایش سرور جوین شده در وضعیت دیسکورد",
-    "launcher.settings.rpcShowMinecraftVersion.name": "نمایش نسخه ماینکرفت در وضعیت دیسکورد",
-    "launcher.settings.rpcShowTimePlayed.name": "نمایش مدت زمان بازی در وضعیت دیسکورد",
     "launcher.settings.miscSection.name": "سایر",
     "launcher.settings.miscHideOnClose.name": "پنهان شدن در نوار اعلان پس از بستن",
     "launcher.settings.miscCloseAfterInjected.name": "بسته شدن پس از اینجکت",
@@ -63,6 +56,7 @@
     "launcher.status.preparingDll.name": "وضعیت: قادر به تهیه DLL نبود",
     "launcher.status.injectionError.name": "وضعیت: اینجکت ناموفق بود",
     "launcher.status.invalidDllPath.name": "وضعیت: مسیر فایل DLL اشتباه است",
+    "launcher.status.unsupportedMinecraft.name": "وضغیت: نسخه ماینکرفت شما پشتیبانی نمیشود",
     "launcher.error.customDllMissing.name": "شما کاستوم DLL را روشن کردید. لطفا قبل از لانچ کردن یک مسیر یا URL معتبر برای DLL تنظیم کنید.",
     "launcher.error.customDllInvalid.name": "یک مسیر یا URL معتبر وارد کنید که با  .dll تموم میشود.",
     "launcher.error.injectionInProgress.name": "اینجکت درحال انجام است. لطفا صبر کنید تا لانچر به حالت آماده به کار بازگردد.",
@@ -70,6 +64,8 @@
     "launcher.error.injectFailed.name": "امکان اینجکت DLL وجود نداشت.\n\n{}",
     "launcher.error.openMinecraft.name": "امکان باز کردن ماینکرفت وجود نداشت.\n\n{}",
     "launcher.error.minecraftNotFound.name": "ماینکرفت پس از لانچ شدن پیدا نشد.\n\n{}",
+    "launcher.error.minecraftVersionCheckFailed.name": "لانچر نتوانست نسخه ماینکرفت شمارا پیدا کند\n\n{}",
+    "launcher.error.unsupportedMinecraftVersion.name": "ماینکرفت {} توسط لتیت کلاینت پشتیبانی نمیشود {}.\n\nنسخه های پشتیبانی شده: {}",
     "launcher.error.verifyInjection.name": "لانچر نتوانست تایید کند که ماینکرفت پس از اینجکت DLL باز مانده است.\n\n{}",
     "launcher.error.injectedProcessExited.name": "ماینکرفت {} بعد از تزریق DLL با کد خروج {} بسته شد. احتمالاً DLL با نسخه ماینکرفت شما سازگار نیست.",
     "launcher.error.launchTaskFailed.name": "کار اینجکت به طور غیر منتظره ای با شکست مواجه شد.\n\n{}"
