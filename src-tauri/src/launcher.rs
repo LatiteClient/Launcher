@@ -38,12 +38,13 @@ const STATUS_PREPARING_DLL: &str = "launcher.status.preparingDll.name";
 const STATUS_INJECTION_ERROR: &str = "launcher.status.injectionError.name";
 const STATUS_INVALID_DLL_PATH: &str = "launcher.status.invalidDllPath.name";
 const STATUS_UNSUPPORTED_MINECRAFT: &str = "launcher.status.unsupportedMinecraft.name";
+
 const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
 const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
 const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
 const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(8);
+const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(15);
 const MINECRAFT_LOADED_MODULE_COUNT: usize = 165;
 const MINECRAFT_MODULE_POLL_DELAY: Duration = Duration::from_millis(100);
 const MINECRAFT_LOADING_DELAY: Duration = Duration::from_secs(6);
