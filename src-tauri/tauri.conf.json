@@ -112,7 +112,8 @@
       "windows": {
         "nsis": {
           "installerIcon": "icons/icon.ico",
-          "license": "../LICENSE"
+          "license": "../LICENSE",
+          "template": "nsis/installer.nsi"
         }
       }
     }
