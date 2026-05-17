@@ -5,42 +5,59 @@ use serde::Deserialize;
 
 use crate::launch_request::BuildKind;
 
-// TODO: Move to main Latite repo instead of using Latite-Releases
-pub const RELEASE_REPO: &str = "Imrglop/Latite-Releases";
+pub const LATITE_REPO: &str = "LatiteClient/Latite";
 pub const LAUNCHER_REPO: &str = "LatiteClient/Launcher";
 
-const RELEASE_DLL_DOWNLOAD_URL: &str =
-    "https://github.com/Imrglop/Latite-Releases/releases/latest/download/Latite.dll";
-const NIGHTLY_DLL_DOWNLOAD_URL: &str =
-    "https://github.com/LatiteClient/Latite/releases/download/nightly/LatiteNightly.dll";
-const DEBUG_DLL_DOWNLOAD_URL: &str =
-    "https://github.com/LatiteClient/Latite/releases/download/debug/LatiteDebug.dll";
-const DEBUG_PDB_DOWNLOAD_URL: &str =
-    "https://github.com/LatiteClient/Latite/releases/download/debug/LatiteDebug.pdb";
-const REQUEST_USER_AGENT: &str = "Latite Launcher/0.1";
+const REQUEST_USER_AGENT: &str = "Latite Launcher/1.0.0";
+
+#[derive(Clone, Copy)]
+enum ReleaseRef {
+    Latest,
+    Tag(&'static str),
+}
 
 #[derive(Clone, Copy)]
 struct AssetDownload {
     file_name: &'static str,
-    url: &'static str,
+    repo: &'static str,
+    release: ReleaseRef,
+}
+
+impl AssetDownload {
+    fn download_url(self) -> String {
+        match self.release {
+            ReleaseRef::Latest => format!(
+                "https://github.com/{}/releases/latest/download/{}",
+                self.repo, self.file_name
+            ),
+            ReleaseRef::Tag(tag) => format!(
+                "https://github.com/{}/releases/download/{tag}/{}",
+                self.repo, self.file_name
+            ),
+        }
+    }
 }
 
 const RELEASE_ASSETS: [AssetDownload; 1] = [AssetDownload {
     file_name: "Latite.dll",
-    url: RELEASE_DLL_DOWNLOAD_URL,
+    repo: LATITE_REPO,
+    release: ReleaseRef::Latest,
 }];
 const NIGHTLY_ASSETS: [AssetDownload; 1] = [AssetDownload {
     file_name: "LatiteNightly.dll",
-    url: NIGHTLY_DLL_DOWNLOAD_URL,
+    repo: LATITE_REPO,
+    release: ReleaseRef::Tag("nightly"),
 }];
 const DEBUG_ASSETS: [AssetDownload; 2] = [
     AssetDownload {
         file_name: "LatiteDebug.dll",
-        url: DEBUG_DLL_DOWNLOAD_URL,
+        repo: LATITE_REPO,
+        release: ReleaseRef::Tag("debug"),
     },
     AssetDownload {
         file_name: "LatiteDebug.pdb",
-        url: DEBUG_PDB_DOWNLOAD_URL,
+        repo: LATITE_REPO,
+        release: ReleaseRef::Tag("debug"),
     },
 ];
 
@@ -109,12 +126,13 @@ pub async fn download_build(build: BuildKind, directory: &Path) -> Result<PathBu
     for asset in build_assets(build) {
         let destination = directory.join(asset.file_name);
         let temporary_destination = temporary_download_path(&destination);
+        let download_url = asset.download_url();
 
         if temporary_destination.exists() {
             let _ = std::fs::remove_file(&temporary_destination);
         }
 
-        if let Err(error) = download_asset(&client, asset.url, &temporary_destination).await {
+        if let Err(error) = download_asset(&client, &download_url, &temporary_destination).await {
             let _ = std::fs::remove_file(&temporary_destination);
             cleanup_temporary_files(&downloads);
             return Err(error);

@@ -564,7 +564,7 @@ async fn prepare_release_dll(
         .as_ref()
         .map(|metadata| metadata.version())
         .or(previous_version.as_deref());
-    let latest_dll_version = match release::fetch_latest_release_name(release::RELEASE_REPO).await {
+    let latest_dll_version = match release::fetch_latest_release_name(release::LATITE_REPO).await {
         Ok(version) => {
             crate::log_info!("Latest release version: {version}");
             Some(version)
