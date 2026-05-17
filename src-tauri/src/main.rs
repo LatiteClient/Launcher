@@ -55,12 +55,6 @@ async fn inject(
 }
 
 #[tauri::command]
-async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<(), String> {
-    let current_version = app_handle.package_info().version.to_string();
-    launcher::check_for_updates(&current_version, &app_handle).await
-}
-
-#[tauri::command]
 fn update_option(id: &str, value: bool, state: State<'_, AppState>) -> Result<(), String> {
     state.update_bool_option(id, value)
 }
@@ -289,7 +283,6 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             inject,
-            check_for_updates,
             update_option,
             get_option,
             get_string_option,

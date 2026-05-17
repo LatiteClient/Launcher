@@ -1235,7 +1235,7 @@ input[type="checkbox"]:checked::after {
 	border-radius: 999px;
 }
 
-#creditsModal {
+.modal {
 	position: fixed;
 	inset: 0;
 	display: flex;
@@ -1249,7 +1249,7 @@ input[type="checkbox"]:checked::after {
 	transform: translateY(0px);
 }
 
-#creditsModal.hidden {
+.modal.hidden {
 	opacity: 0;
 	pointer-events: none;
 	transform: translateY(10px);
@@ -1349,4 +1349,70 @@ input[type="checkbox"]:checked::after {
 	color: #ffffff;
 	font-weight: 500;
 	font-size: 15px;
+}
+
+.updateModalContent {
+	width: min(390px, calc(100% - 64px));
+	box-sizing: border-box;
+}
+
+.updateModalHeader {
+	margin-bottom: 18px;
+}
+
+.updateModalBody {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 22px;
+}
+
+.updateModalMessage {
+	color: #f0f0f0d8;
+	font-size: 14px;
+	line-height: 1.45;
+	white-space: normal;
+}
+
+.updateReleaseLink {
+	width: fit-content;
+	border: none;
+	background: transparent;
+	color: #a8c0ff;
+	font: 500 13px "Segoe UI", sans-serif;
+	padding: 0;
+	cursor: pointer;
+	transition: opacity 0.12s ease;
+}
+
+.updateReleaseLink:hover {
+	opacity: 0.78;
+}
+
+.updateReleaseLink:active {
+	opacity: 0.58;
+}
+
+.updateModalError {
+	color: #ffb4b4;
+	font-size: 13px;
+	line-height: 1.4;
+	white-space: normal;
+}
+
+.updateModalError.hidden {
+	display: none;
+}
+
+.updateModalActions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+#updateModal.is-installing .modalClose,
+#updateModal.is-installing #updateLaterButton,
+#updateModal.is-installing #updateReleaseLink {
+	pointer-events: none;
+	opacity: 0.45;
 }

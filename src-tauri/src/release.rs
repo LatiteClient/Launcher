@@ -6,7 +6,6 @@ use serde::Deserialize;
 use crate::launch_request::BuildKind;
 
 pub const LATITE_REPO: &str = "LatiteClient/Latite";
-pub const LAUNCHER_REPO: &str = "LatiteClient/Launcher";
 
 const REQUEST_USER_AGENT: &str = "Latite Launcher/1.0.0";
 

@@ -476,30 +476,6 @@ fn monitor_process_after_injection(
     }
 }
 
-pub async fn check_for_updates(
-    current_version: &str,
-    app_handle: &AppHandle,
-) -> Result<(), String> {
-    match release::fetch_latest_release_name(release::LAUNCHER_REPO).await {
-        Ok(latest_version) => {
-            crate::log_info!(
-                "Latest launcher version: {latest_version}, Current launcher version: {current_version}"
-            );
-
-            if String::from("v") + current_version != latest_version {
-                ui::emit_dialog(
-                    app_handle,
-                    &UiDialog::info("launcher.dialog.updateAvailable.name")
-                        .with_arg(latest_version),
-                );
-            }
-
-            Ok(())
-        }
-        Err(error) => Err(format!("Failed to check for launcher updates: {error}")),
-    }
-}
-
 async fn resolve_dll(state: &AppState, request: InjectRequest) -> Result<ResolvedDll, String> {
     let InjectRequest { dll_path, build } = request;
 

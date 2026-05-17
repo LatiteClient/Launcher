@@ -8,6 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import { locale as getSystemLocale } from "@tauri-apps/api/os";
 import { open as openUrl } from "@tauri-apps/api/shell";
 import { readText as readClipboardText } from "@tauri-apps/api/clipboard";
+import { checkUpdate, installUpdate } from "@tauri-apps/api/updater";
 
 const AUTO_LOCALE = "auto";
 const DEFAULT_LOCALE = "en_US";
@@ -67,6 +68,14 @@ const discordLink = document.getElementById("discord");
 const openFolderButton = document.getElementById("openFolder");
 const launcherContainer = document.querySelector(".launcher");
 const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
+const updateModal = document.getElementById("updateModal");
+const updateModalOverlay = updateModal?.querySelector(".modalOverlay");
+const updateModalCloseButton = document.getElementById("updateModalClose");
+const updateModalMessage = document.getElementById("updateModalMessage");
+const updateModalError = document.getElementById("updateModalError");
+const updateReleaseLink = document.getElementById("updateReleaseLink");
+const updateLaterButton = document.getElementById("updateLaterButton");
+const updateNowButton = document.getElementById("updateNowButton");
 
 let currentLocalePreference = AUTO_LOCALE;
 let currentSystemLocale = DEFAULT_LOCALE;
@@ -76,6 +85,8 @@ let pendingStatusUpdate = null;
 let closeWindowTimer = null;
 let isCloseWindowInProgress = false;
 let launcherLanguageMenuDisplayTimer = null;
+let pendingLauncherUpdate = null;
+let launcherUpdateState = "idle";
 
 function buildLocaleRegistry(modules) {
 	const registry = {};
@@ -243,6 +254,101 @@ function normalizeUiMessage(message) {
 function translateUiMessage(message) {
 	const normalizedMessage = normalizeUiMessage(message);
 	return t(normalizedMessage.key, normalizedMessage.args);
+}
+
+function setLauncherUpdateState(state, version = pendingLauncherUpdate?.version) {
+	launcherUpdateState = state;
+
+	if (!updateModal || !updateModalMessage || !updateNowButton) {
+		return;
+	}
+
+	updateModal.classList.toggle("is-installing", state === "installing");
+
+	if (state === "installing") {
+		updateModalMessage.textContent = t("launcher.update.installing.name", version);
+		updateNowButton.disabled = true;
+		updateNowButton.textContent = t("launcher.update.installingAction.name");
+		updateModalError?.classList.add("hidden");
+		return;
+	}
+
+	updateNowButton.disabled = false;
+	updateNowButton.textContent = t("launcher.update.install.name");
+
+	if (state === "available") {
+		updateModalMessage.textContent = t("launcher.update.available.name", version);
+		updateModalError?.classList.add("hidden");
+		return;
+	}
+
+	if (state === "failed") {
+		updateModalMessage.textContent = t("launcher.update.available.name", version);
+		updateModalError?.classList.remove("hidden");
+	}
+}
+
+function showLauncherUpdateModal(update) {
+	if (!updateModal || !update.manifest?.version) {
+		return;
+	}
+
+	pendingLauncherUpdate = {
+		version: update.manifest.version,
+	};
+
+	setLauncherUpdateState("available", pendingLauncherUpdate.version);
+	updateModal.classList.remove("hidden");
+	updateModal.setAttribute("aria-hidden", "false");
+}
+
+function canDismissLauncherUpdateModal() {
+	return launcherUpdateState !== "installing";
+}
+
+function closeLauncherUpdateModal() {
+	if (!updateModal || !canDismissLauncherUpdateModal()) {
+		return;
+	}
+
+	updateModal.classList.add("hidden");
+	updateModal.setAttribute("aria-hidden", "true");
+	launcherUpdateState = "idle";
+}
+
+function getLauncherReleaseUrl(version) {
+	return `https://github.com/LatiteClient/Launcher/releases/tag/${encodeURIComponent(
+		version,
+	)}`;
+}
+
+async function installLauncherUpdate() {
+	if (!pendingLauncherUpdate || launcherUpdateState === "installing") {
+		return;
+	}
+
+	setLauncherUpdateState("installing", pendingLauncherUpdate.version);
+
+	try {
+		await installUpdate();
+	} catch (error) {
+		console.error("Failed to install launcher update:", error);
+		setLauncherUpdateState("failed", pendingLauncherUpdate.version);
+	}
+}
+
+async function checkForLauncherUpdates() {
+	try {
+		const update = await checkUpdate();
+
+		if (!update.shouldUpdate || !update.manifest?.version) {
+			return;
+		}
+
+		showLauncherUpdateModal(update);
+	} catch (error) {
+		console.error("Failed to check for launcher updates:", error);
+	}
 }
 
 function createStatusElement(message, className = "status-message") {
@@ -538,6 +644,10 @@ async function setLocale(localeId) {
 	await i18next.changeLanguage(resolvedLocale);
 	applyTranslations();
 	updateStatus(activeStatusMessage, { force: true, skipAnimation: true });
+
+	if (launcherUpdateState !== "idle" && pendingLauncherUpdate) {
+		setLauncherUpdateState(launcherUpdateState, pendingLauncherUpdate.version);
+	}
 }
 
 async function applyResolvedLocale() {
@@ -1007,6 +1117,31 @@ function registerPrimaryEventListeners() {
 			});
 		},
 	);
+
+	updateModalOverlay?.addEventListener("click", closeLauncherUpdateModal);
+	updateModalCloseButton?.addEventListener("click", closeLauncherUpdateModal);
+	updateLaterButton?.addEventListener("click", closeLauncherUpdateModal);
+	updateNowButton?.addEventListener("click", () => {
+		installLauncherUpdate().catch((error) => {
+			console.error("Failed to start launcher update:", error);
+		});
+	});
+	updateReleaseLink?.addEventListener("click", () => {
+		if (!pendingLauncherUpdate) {
+			return;
+		}
+
+		openUrl(getLauncherReleaseUrl(pendingLauncherUpdate.version)).catch(
+			(error) => {
+				console.error("Failed to open launcher release link:", error);
+			},
+		);
+	});
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") {
+			closeLauncherUpdateModal();
+		}
+	});
 }
 
 async function initializeOptionInputs() {
@@ -1111,9 +1246,7 @@ async function initializeApp() {
 		initializeOptionInputs(),
 		loadSavedCustomDllPath(),
 		initializeLatiteBuildSetting(),
-		invoke("check_for_updates").catch((error) => {
-			console.error("Failed to check for updates:", error);
-		}),
+		checkForLauncherUpdates(),
 	]);
 }
 

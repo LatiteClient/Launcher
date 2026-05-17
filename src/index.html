@@ -377,6 +377,62 @@
           </div>
         </div>
       </div>
+
+      <div id="updateModal" class="modal hidden" aria-hidden="true">
+        <div class="modalOverlay"></div>
+        <div class="modalContent updateModalContent">
+          <div class="modalHeader updateModalHeader">
+            <h2 data-i18n="launcher.update.title.name">Launcher update</h2>
+            <img
+              src="./img/close.svg"
+              class="modalClose"
+              id="updateModalClose"
+            />
+          </div>
+          <div class="updateModalBody">
+            <p
+              class="updateModalMessage"
+              id="updateModalMessage"
+              data-i18n="launcher.update.available.name"
+            >
+              A new launcher version is available: {}
+            </p>
+            <button
+              type="button"
+              id="updateReleaseLink"
+              class="updateReleaseLink"
+              data-i18n="launcher.update.viewRelease.name"
+            >
+              View release
+            </button>
+            <p
+              class="updateModalError hidden"
+              id="updateModalError"
+              data-i18n="launcher.update.failed.name"
+            >
+              The launcher could not install the update. Please try again later.
+            </p>
+          </div>
+          <div class="updateModalActions">
+            <button
+              type="button"
+              id="updateLaterButton"
+              class="customDllActionButton"
+              data-i18n="launcher.update.later.name"
+            >
+              Later
+            </button>
+            <button
+              type="button"
+              id="updateNowButton"
+              class="customDllActionButton primary"
+              data-i18n="launcher.update.install.name"
+            >
+              Update now
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="./main.js" type="module"></script>
