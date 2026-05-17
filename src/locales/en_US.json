@@ -27,6 +27,7 @@
     "launcher.settings.miscSection.name": "Miscellaneous",
     "launcher.settings.miscHideOnClose.name": "Hide to system tray on close",
     "launcher.settings.miscCloseAfterInjected.name": "Close after injected",
+    "launcher.settings.version.name": "Launcher version {}",
     "launcher.credits.title.name": "Credits",
     "launcher.credits.developers.name": "Developers",
     "launcher.credits.contributors.name": "Contributors",

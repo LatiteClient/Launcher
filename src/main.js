@@ -68,6 +68,7 @@ const discordLink = document.getElementById("discord");
 const openFolderButton = document.getElementById("openFolder");
 const launcherContainer = document.querySelector(".launcher");
 const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
+const launcherVersionLabel = document.getElementById("launcherVersionLabel");
 const updateModal = document.getElementById("updateModal");
 const updateModalOverlay = updateModal?.querySelector(".modalOverlay");
 const updateModalCloseButton = document.getElementById("updateModalClose");
@@ -87,6 +88,7 @@ let isCloseWindowInProgress = false;
 let launcherLanguageMenuDisplayTimer = null;
 let pendingLauncherUpdate = null;
 let launcherUpdateState = "idle";
+let currentLauncherVersion = null;
 
 function buildLocaleRegistry(modules) {
 	const registry = {};
@@ -256,6 +258,38 @@ function translateUiMessage(message) {
 	return t(normalizedMessage.key, normalizedMessage.args);
 }
 
+function formatUpdaterDiagnostic(error) {
+	if (error instanceof Error) {
+		return error.stack || error.message;
+	}
+
+	if (typeof error === "string") {
+		return error;
+	}
+
+	try {
+		return JSON.stringify(error);
+	} catch {
+		return String(error);
+	}
+}
+
+function logUpdaterInfo(message) {
+	invoke("log_updater_event", { level: "info", message }).catch((error) => {
+		console.error("Failed to persist updater info log:", error);
+	});
+}
+
+function logUpdaterError(context, error) {
+	const diagnostic = `${context}: ${formatUpdaterDiagnostic(error)}`;
+	console.error(diagnostic);
+	invoke("log_updater_event", { level: "error", message: diagnostic }).catch(
+		(logError) => {
+			console.error("Failed to persist updater error log:", logError);
+		},
+	);
+}
+
 function setLauncherUpdateState(state, version = pendingLauncherUpdate?.version) {
 	launcherUpdateState = state;
 
@@ -332,22 +366,30 @@ async function installLauncherUpdate() {
 	try {
 		await installUpdate();
 	} catch (error) {
-		console.error("Failed to install launcher update:", error);
+		logUpdaterError(
+			`Failed to install launcher update ${pendingLauncherUpdate.version}`,
+			error,
+		);
 		setLauncherUpdateState("failed", pendingLauncherUpdate.version);
 	}
 }
 
 async function checkForLauncherUpdates() {
 	try {
+		logUpdaterInfo("Checking for launcher updates.");
 		const update = await checkUpdate();
 
 		if (!update.shouldUpdate || !update.manifest?.version) {
+			logUpdaterInfo("No launcher update is available.");
 			return;
 		}
 
+		logUpdaterInfo(
+			`Launcher update ${update.manifest.version} is available.`,
+		);
 		showLauncherUpdateModal(update);
 	} catch (error) {
-		console.error("Failed to check for launcher updates:", error);
+		logUpdaterError("Failed to check for launcher updates", error);
 	}
 }
 
@@ -435,7 +477,9 @@ function setLauncherLanguageMenuOpen(isOpen, { focusSelected = false } = {}) {
 	// so sections animate back in.
 	if (centerSettingsEl) {
 		const otherSections = Array.from(
-			centerSettingsEl.querySelectorAll(".settingsection:not(#languageSection)"),
+			centerSettingsEl.querySelectorAll(
+				".settingsection:not(#languageSection), .settingsVersion",
+			),
 		);
 
 		if (isOpen) {
@@ -648,6 +692,8 @@ async function setLocale(localeId) {
 	if (launcherUpdateState !== "idle" && pendingLauncherUpdate) {
 		setLauncherUpdateState(launcherUpdateState, pendingLauncherUpdate.version);
 	}
+
+	updateLauncherVersionLabel();
 }
 
 async function applyResolvedLocale() {
@@ -1186,6 +1232,26 @@ async function initializeLatiteBuildSetting() {
 	}
 }
 
+function updateLauncherVersionLabel() {
+	if (!launcherVersionLabel || !currentLauncherVersion) {
+		return;
+	}
+
+	launcherVersionLabel.textContent = t(
+		"launcher.settings.version.name",
+		currentLauncherVersion,
+	);
+}
+
+async function initializeLauncherVersionLabel() {
+	try {
+		currentLauncherVersion = await invoke("get_launcher_version");
+		updateLauncherVersionLabel();
+	} catch (error) {
+		console.error("Failed to load launcher version:", error);
+	}
+}
+
 async function registerTauriListeners() {
 	await Promise.all([
 		listen(STATUS_EVENT, (event) => {
@@ -1246,6 +1312,7 @@ async function initializeApp() {
 		initializeOptionInputs(),
 		loadSavedCustomDllPath(),
 		initializeLatiteBuildSetting(),
+		initializeLauncherVersionLabel(),
 		checkForLauncherUpdates(),
 	]);
 }

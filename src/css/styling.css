@@ -710,7 +710,8 @@ p {
 }
 
 /* Fade-out helper used by JS to animate sections before hiding them with display:none */
-.centersettings .settingsection.fade-out {
+.centersettings .settingsection.fade-out,
+.centersettings .settingsVersion.fade-out {
 	opacity: 0;
 	transform: translateY(-6px);
 	pointer-events: none;
@@ -1159,6 +1160,17 @@ p {
 	margin: 0;
 	font-weight: 300;
 	white-space: normal;
+}
+
+.settingsVersion {
+	align-self: center;
+	margin-top: auto;
+	padding-top: 4px;
+	color: #f0f0f08f;
+	font:
+		400 12px "Segoe UI",
+		sans-serif;
+	text-shadow: 0 3px 7px #00000062;
 }
 
 input[type="checkbox"] {

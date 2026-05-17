@@ -27,6 +27,7 @@ impl UiMessage {
 
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "lowercase")]
+#[allow(dead_code)]
 pub enum UiDialogLevel {
     Info,
     Error,
@@ -41,6 +42,7 @@ pub struct UiDialog {
     pub args: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl UiDialog {
     pub fn info(key: impl Into<String>) -> Self {
         Self {

@@ -111,6 +111,19 @@ fn open_folder() -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_launcher_version(app_handle: tauri::AppHandle) -> String {
+    app_handle.package_info().version.to_string()
+}
+
+#[tauri::command]
+fn log_updater_event(level: &str, message: &str) {
+    match level {
+        "error" => crate::log_error!("Updater: {message}"),
+        _ => crate::log_info!("Updater: {message}"),
+    }
+}
+
 fn get_main_window(app_handle: &tauri::AppHandle) -> Result<tauri::Window, String> {
     app_handle
         .get_window(MAIN_WINDOW_LABEL)
@@ -291,7 +304,9 @@ fn main() {
             update_latite_build,
             minimize_window,
             close_window,
-            open_folder
+            open_folder,
+            get_launcher_version,
+            log_updater_event
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
