@@ -2,13 +2,16 @@ use std::path::{Path, PathBuf};
 
 use crate::launch_request::BuildKind;
 
-pub fn get_launcher_path() -> Result<PathBuf, String> {
+pub fn get_latite_path() -> Result<PathBuf, String> {
     let local_app_data = std::env::var("LOCALAPPDATA")
         .map_err(|error| format!("LOCALAPPDATA is unavailable: {error}"))?;
-    let launcher_path = PathBuf::from(local_app_data)
-        .join("Latite")
-        .join("Launcher");
+    let latite_path = PathBuf::from(local_app_data).join("Latite");
 
+    ensure_directory(&latite_path)
+}
+
+pub fn get_launcher_path() -> Result<PathBuf, String> {
+    let launcher_path = get_latite_path()?.join("Launcher");
     ensure_directory(&launcher_path)
 }
 
@@ -20,6 +23,10 @@ pub fn get_dlls_path() -> Result<PathBuf, String> {
 pub fn get_logs_path() -> Result<PathBuf, String> {
     let logs_path = get_launcher_path()?.join("Logs");
     ensure_directory(&logs_path)
+}
+
+pub fn get_crash_dumps_path() -> Result<PathBuf, String> {
+    Ok(get_latite_path()?.join("Logs").join("Crashes"))
 }
 
 pub fn get_latite_build_path(build: BuildKind) -> Result<PathBuf, String> {

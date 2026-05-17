@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app_state;
+mod crash_dumps;
 mod dialogs;
 mod inject;
 mod latite_dll;
@@ -105,13 +106,7 @@ fn close_window(app_handle: tauri::AppHandle, state: State<'_, AppState>) -> Res
 
 #[tauri::command]
 fn open_folder() -> Result<(), String> {
-    let local_appdata =
-        std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
-
-    let folder_path = std::path::Path::new(&local_appdata).join("Latite");
-
-    // Create the folder if it doesn't exist
-    let _ = std::fs::create_dir_all(&folder_path);
+    let folder_path = paths::get_latite_path()?;
 
     // Use explorer to open the folder
     std::process::Command::new("explorer")
@@ -244,6 +239,16 @@ fn handle_system_tray_event(app_handle: &tauri::AppHandle, event: SystemTrayEven
 fn main() {
     if let Err(error) = logging::init() {
         logging::log_startup_error(&format!("Failed to initialize launcher logging: {error}"));
+    }
+
+    match crash_dumps::delete_old_crash_dumps() {
+        Ok(deleted_count) if deleted_count > 0 => {
+            crate::log_info!("Deleted {deleted_count} crash dump(s) older than seven days.");
+        }
+        Ok(_) => {}
+        Err(error) => {
+            crate::log_error!("Failed to clean old crash dumps: {error}");
+        }
     }
 
     let app_state = match AppState::new() {
