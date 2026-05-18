@@ -7,9 +7,10 @@ use std::time::Duration;
 
 use windows::core::{s, Error as WindowsError, HRESULT, PWSTR};
 use windows::Win32::Foundation::{
-    CloseHandle, ERROR_BAD_LENGTH, ERROR_NO_MORE_FILES, HANDLE, WAIT_FAILED, WAIT_OBJECT_0,
-    WAIT_TIMEOUT, WIN32_ERROR,
+    CloseHandle, APPMODEL_ERROR_NO_PACKAGE, ERROR_BAD_LENGTH, ERROR_INSUFFICIENT_BUFFER,
+    ERROR_NO_MORE_FILES, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT, WIN32_ERROR,
 };
+use windows::Win32::Storage::Packaging::Appx::{GetPackageId, PACKAGE_ID};
 use windows::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32First, Module32Next, Process32First, Process32Next,
@@ -54,6 +55,14 @@ pub enum ModuleLoadWaitOutcome {
     Exited(u32),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct PackageVersion {
+    pub major: u16,
+    pub minor: u16,
+    pub build: u16,
+    pub revision: u16,
+}
+
 pub fn open_target_process(pid: u32) -> Result<TargetProcess, String> {
     unsafe { open_target_process_inner(pid) }
 }
@@ -85,6 +94,10 @@ pub fn find_process_id(process_name: &str) -> Result<Option<u32>, String> {
 
 pub fn get_process_image_path(pid: u32) -> Result<PathBuf, String> {
     unsafe { get_process_image_path_inner(pid) }
+}
+
+pub fn get_process_package_version(pid: u32) -> Result<Option<PackageVersion>, String> {
+    unsafe { get_process_package_version_inner(pid) }
 }
 
 unsafe fn open_target_process_inner(pid: u32) -> Result<TargetProcess, String> {
@@ -130,6 +143,54 @@ unsafe fn get_process_image_path_inner(pid: u32) -> Result<PathBuf, String> {
     }
 
     Ok(PathBuf::from(OsString::from_wide(&path_buffer)))
+}
+
+unsafe fn get_process_package_version_inner(pid: u32) -> Result<Option<PackageVersion>, String> {
+    let process_handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+        .map_err(|error| format!("Failed to open process {pid} for package query: {error}"))?;
+    let process_handle = OwnedHandle::new(process_handle);
+
+    let mut buffer_length = 0u32;
+    match GetPackageId(process_handle.raw(), &raw mut buffer_length, None) {
+        ERROR_INSUFFICIENT_BUFFER => {}
+        APPMODEL_ERROR_NO_PACKAGE => return Ok(None),
+        error => {
+            return Err(format!(
+                "Failed to query package ID buffer size for process {pid}: {error:?}"
+            ));
+        }
+    }
+
+    if buffer_length < size_of::<PACKAGE_ID>() as u32 {
+        return Err(format!(
+            "Package ID buffer for process {pid} was unexpectedly small: {buffer_length} bytes."
+        ));
+    }
+
+    let mut buffer = vec![0u8; buffer_length as usize];
+    match GetPackageId(
+        process_handle.raw(),
+        &raw mut buffer_length,
+        Some(buffer.as_mut_ptr()),
+    ) {
+        error if error == WIN32_ERROR(0) => {}
+        APPMODEL_ERROR_NO_PACKAGE => return Ok(None),
+        error => {
+            return Err(format!(
+                "Failed to query package ID for process {pid}: {error:?}"
+            ));
+        }
+    }
+
+    let package_id = std::ptr::read_unaligned(buffer.as_ptr().cast::<PACKAGE_ID>());
+    let version = package_id.version.Anonymous.Anonymous;
+
+    Ok(Some(PackageVersion {
+        major: version.Major,
+        minor: version.Minor,
+        build: version.Build,
+        revision: version.Revision,
+    }))
 }
 
 unsafe fn inject_dll_inner(target_process: &TargetProcess, dll_path: &Path) -> Result<(), String> {

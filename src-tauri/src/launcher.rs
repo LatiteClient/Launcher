@@ -338,19 +338,95 @@ fn verify_minecraft_supported(
             error,
         )
     })?;
-    let minecraft_version = version_info::get_file_version(&minecraft_path).map_err(|error| {
-        report_failure(
-            status,
-            STATUS_VERIFY_FAILED,
-            UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
-            error,
-        )
-    })?;
+    let minecraft_version = match version_info::get_file_version(&minecraft_path) {
+        Ok(version) => {
+            crate::log_info!(
+                "Detected Minecraft version {version} from {}.",
+                minecraft_path.display()
+            );
+            version
+        }
+        Err(error) if error.is_missing_version_info() => {
+            crate::log_info!("{error} Trying package-version fallback.");
 
-    crate::log_info!(
-        "Detected Minecraft version {minecraft_version} from {}.",
-        minecraft_path.display()
-    );
+            match injector::get_process_package_version(pid) {
+                Ok(Some(package_version)) => {
+                    let matched_version = version_info::match_supported_package_version(
+                        package_version.major,
+                        package_version.minor,
+                        package_version.build,
+                        metadata.supported_minecraft_versions(),
+                    );
+
+                    crate::log_info!(
+                        "Detected Minecraft package version {}.{}.{}.{}.",
+                        package_version.major,
+                        package_version.minor,
+                        package_version.build,
+                        package_version.revision,
+                    );
+
+                    if let Some(version) = matched_version {
+                        crate::log_info!(
+                            "Latite DLL version {} supports Minecraft package version {}.{}.{}.{} via supported version {version}.",
+                            metadata.version(),
+                            package_version.major,
+                            package_version.minor,
+                            package_version.build,
+                            package_version.revision,
+                        );
+                        return Ok(());
+                    }
+
+                    let package_version = format!(
+                        "{}.{}.{}.{}",
+                        package_version.major,
+                        package_version.minor,
+                        package_version.build,
+                        package_version.revision,
+                    );
+                    let supported_versions =
+                        format_supported_versions(metadata.supported_minecraft_versions());
+
+                    return Err(report_failure(
+                        status,
+                        STATUS_UNSUPPORTED_MINECRAFT,
+                        UiDialog::error("launcher.error.unsupportedMinecraftVersion.name")
+                            .with_arg(&package_version)
+                            .with_arg(metadata.version())
+                            .with_arg(&supported_versions),
+                        format!(
+                            "Latite DLL version {} does not support Minecraft package version {package_version}. Supported Minecraft versions: {supported_versions}",
+                            metadata.version()
+                        ),
+                    ));
+                }
+                Ok(None) => {
+                    crate::log_info!(
+                        "{} Process {pid} has no package identity. Skipping Minecraft compatibility precheck and continuing injection.",
+                        error
+                    );
+                    return Ok(());
+                }
+                Err(package_error) => {
+                    crate::log_error!(
+                        "{} Package-version fallback also failed: {package_error}. Skipping Minecraft compatibility precheck and continuing injection.",
+                        error
+                    );
+                    return Ok(());
+                }
+            }
+        }
+        Err(error) => {
+            let error = error.to_string();
+            return Err(report_failure(
+                status,
+                STATUS_VERIFY_FAILED,
+                UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
+                error,
+            ));
+        }
+    };
 
     if metadata.supports_minecraft_version(&minecraft_version) {
         crate::log_info!(
