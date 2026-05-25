@@ -16,12 +16,12 @@ pub struct InjectionGuard<'a> {
 }
 
 impl AppState {
-    pub fn new() -> Result<Self, String> {
-        Ok(Self {
-            options: Mutex::new(OptionsStore::load()?),
+    pub fn new(options: OptionsStore) -> Self {
+        Self {
+            options: Mutex::new(options),
             is_injecting: AtomicBool::new(false),
             is_tray_icon_visible: AtomicBool::new(false),
-        })
+        }
     }
 
     pub fn try_begin_injection(&self) -> Result<InjectionGuard<'_>, String> {

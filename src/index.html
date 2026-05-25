@@ -307,6 +307,16 @@
                 id="misc_close_after_injected"
               />
             </div>
+            <div class="settingoption">
+              <p data-i18n="launcher.settings.preventMultipleInstances.name">
+                Keep only one launcher instance open
+              </p>
+              <input
+                class="options_input"
+                type="checkbox"
+                id="prevent_multiple_instances"
+              />
+            </div>
           </div>
 
           <div class="settingsVersion" id="launcherVersionLabel"></div>
@@ -431,6 +441,41 @@
               data-i18n="launcher.update.install.name"
             >
               Update now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="duplicateInstanceModal" class="modal hidden" aria-hidden="true">
+        <div class="modalOverlay"></div>
+        <div class="modalContent noticeModalContent">
+          <div class="modalHeader noticeModalHeader">
+            <h2 data-i18n="launcher.instanceAlreadyOpen.title.name">
+              Launcher already open
+            </h2>
+            <img
+              src="./img/close.svg"
+              class="modalClose"
+              id="duplicateInstanceModalClose"
+            />
+          </div>
+          <div class="noticeModalBody">
+            <p
+              class="noticeModalMessage"
+              data-i18n="launcher.instanceAlreadyOpen.message.name"
+            >
+              Latite Client Launcher is already open. Use this window to launch
+              Latite Client, or close it before opening another copy.
+            </p>
+          </div>
+          <div class="noticeModalActions">
+            <button
+              type="button"
+              id="duplicateInstanceOkButton"
+              class="customDllActionButton primary"
+              data-i18n="launcher.instanceAlreadyOpen.action.name"
+            >
+              Got it
             </button>
           </div>
         </div>

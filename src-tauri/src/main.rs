@@ -13,6 +13,7 @@ mod logging;
 mod options;
 mod paths;
 mod release;
+mod single_instance;
 mod ui;
 mod version_info;
 
@@ -26,6 +27,8 @@ const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "launcher-tray";
 const TRAY_SHOW_MENU_ITEM_ID: &str = "tray-show";
 const TRAY_EXIT_MENU_ITEM_ID: &str = "tray-exit";
+const PREVENT_MULTIPLE_INSTANCES_OPTION_ID: &str = "prevent_multiple_instances";
+const DUPLICATE_INSTANCE_EVENT: &str = "duplicate_instance_attempted";
 
 #[tauri::command]
 async fn inject(
@@ -55,8 +58,35 @@ async fn inject(
 }
 
 #[tauri::command]
-fn update_option(id: &str, value: bool, state: State<'_, AppState>) -> Result<(), String> {
-    state.update_bool_option(id, value)
+fn update_option(
+    id: &str,
+    value: bool,
+    state: State<'_, AppState>,
+    instance_manager: State<'_, single_instance::InstanceManager>,
+) -> Result<(), String> {
+    let previous_instance_guard_enabled = if id == PREVENT_MULTIPLE_INSTANCES_OPTION_ID {
+        Some(instance_manager.is_enabled()?)
+    } else {
+        None
+    };
+
+    if id == PREVENT_MULTIPLE_INSTANCES_OPTION_ID && value {
+        instance_manager.set_enabled(true)?;
+    }
+
+    if let Err(error) = state.update_bool_option(id, value) {
+        if let Some(previous_enabled) = previous_instance_guard_enabled {
+            let _ = instance_manager.set_enabled(previous_enabled);
+        }
+
+        return Err(error);
+    }
+
+    if id == PREVENT_MULTIPLE_INSTANCES_OPTION_ID && !value {
+        instance_manager.set_enabled(false)?;
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -258,8 +288,8 @@ fn main() {
         }
     }
 
-    let app_state = match AppState::new() {
-        Ok(state) => state,
+    let options_store = match options::OptionsStore::load() {
+        Ok(store) => store,
         Err(error) => {
             let message = format!("Failed to initialize launcher: {error}");
             dialogs::show_error(&message);
@@ -268,8 +298,53 @@ fn main() {
         }
     };
 
+    let instance_guard = match options_store.get_bool(PREVENT_MULTIPLE_INSTANCES_OPTION_ID) {
+        Ok(true) => match single_instance::try_acquire() {
+            Ok(Some(guard)) => Some(guard),
+            Ok(None) => {
+                if let Err(error) = single_instance::signal_duplicate_instance_attempt() {
+                    crate::log_error!("Failed to notify existing launcher instance: {error}");
+                }
+
+                return;
+            }
+            Err(error) => {
+                let message = format!("Failed to initialize launcher instance guard: {error}");
+                dialogs::show_error(&message);
+                crate::log_error!("{message}");
+                return;
+            }
+        },
+        Ok(false) => None,
+        Err(error) => {
+            let message = format!("Failed to read launcher instance setting: {error}");
+            dialogs::show_error(&message);
+            crate::log_error!("{message}");
+            return;
+        }
+    };
+
+    let instance_manager = single_instance::InstanceManager::new(instance_guard);
+    let app_state = AppState::new(options_store);
+
     tauri::Builder::default()
         .manage(app_state)
+        .manage(instance_manager)
+        .setup(|app| {
+            let app_handle = app.handle();
+
+            if let Err(error) = single_instance::start_duplicate_attempt_monitor(move || {
+                schedule_restore_main_window(&app_handle);
+
+                if let Err(error) = app_handle.emit_all(DUPLICATE_INSTANCE_EVENT, ()) {
+                    crate::log_error!("Failed to emit duplicate instance event: {error}");
+                }
+            }) {
+                crate::log_error!("Failed to monitor duplicate launcher attempts: {error}");
+            }
+
+            Ok(())
+        })
         .on_window_event(|event| {
             if event.window().label() != MAIN_WINDOW_LABEL {
                 return;

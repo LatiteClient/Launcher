@@ -17,6 +17,7 @@ const CUSTOM_DLL_PATH_OPTION_ID = "custom_dll_path";
 const LAUNCHER_LANGUAGE_OPTION_ID = "launcher_language";
 const STATUS_EVENT = "inject_status";
 const DIALOG_EVENT = "ui_dialog";
+const DUPLICATE_INSTANCE_EVENT = "duplicate_instance_attempted";
 const LANGUAGE_FALLBACKS = {
 	es: "es_ES",
 	fa: "fa_IR",
@@ -77,6 +78,15 @@ const updateModalError = document.getElementById("updateModalError");
 const updateReleaseLink = document.getElementById("updateReleaseLink");
 const updateLaterButton = document.getElementById("updateLaterButton");
 const updateNowButton = document.getElementById("updateNowButton");
+const duplicateInstanceModal = document.getElementById("duplicateInstanceModal");
+const duplicateInstanceModalOverlay =
+	duplicateInstanceModal?.querySelector(".modalOverlay");
+const duplicateInstanceModalClose = document.getElementById(
+	"duplicateInstanceModalClose",
+);
+const duplicateInstanceOkButton = document.getElementById(
+	"duplicateInstanceOkButton",
+);
 
 let currentLocalePreference = AUTO_LOCALE;
 let currentSystemLocale = DEFAULT_LOCALE;
@@ -348,6 +358,25 @@ function closeLauncherUpdateModal() {
 	updateModal.classList.add("hidden");
 	updateModal.setAttribute("aria-hidden", "true");
 	launcherUpdateState = "idle";
+}
+
+function showDuplicateInstanceModal() {
+	if (!duplicateInstanceModal) {
+		return;
+	}
+
+	duplicateInstanceModal.classList.remove("hidden");
+	duplicateInstanceModal.setAttribute("aria-hidden", "false");
+	duplicateInstanceOkButton?.focus();
+}
+
+function closeDuplicateInstanceModal() {
+	if (!duplicateInstanceModal) {
+		return;
+	}
+
+	duplicateInstanceModal.classList.add("hidden");
+	duplicateInstanceModal.setAttribute("aria-hidden", "true");
 }
 
 function getLauncherReleaseUrl(version) {
@@ -1186,8 +1215,19 @@ function registerPrimaryEventListeners() {
 	document.addEventListener("keydown", (event) => {
 		if (event.key === "Escape") {
 			closeLauncherUpdateModal();
+			closeDuplicateInstanceModal();
 		}
 	});
+
+	duplicateInstanceModalOverlay?.addEventListener(
+		"click",
+		closeDuplicateInstanceModal,
+	);
+	duplicateInstanceModalClose?.addEventListener(
+		"click",
+		closeDuplicateInstanceModal,
+	);
+	duplicateInstanceOkButton?.addEventListener("click", closeDuplicateInstanceModal);
 }
 
 async function initializeOptionInputs() {
@@ -1261,6 +1301,9 @@ async function registerTauriListeners() {
 			showLocalizedDialog(event.payload).catch((error) => {
 				console.error("Failed to show launcher dialog:", error);
 			});
+		}),
+		listen(DUPLICATE_INSTANCE_EVENT, () => {
+			showDuplicateInstanceModal();
 		}),
 	]);
 }

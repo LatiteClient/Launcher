@@ -1363,27 +1363,35 @@ input[type="checkbox"]:checked::after {
 	font-size: 15px;
 }
 
-.updateModalContent {
+.updateModalContent,
+.noticeModalContent {
 	width: min(390px, calc(100% - 64px));
 	box-sizing: border-box;
 }
 
-.updateModalHeader {
+.updateModalHeader,
+.noticeModalHeader {
 	margin-bottom: 18px;
 }
 
-.updateModalBody {
+.updateModalBody,
+.noticeModalBody {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	margin-bottom: 22px;
 }
 
-.updateModalMessage {
+.updateModalMessage,
+.noticeModalMessage {
 	color: #f0f0f0d8;
 	font-size: 14px;
 	line-height: 1.45;
 	white-space: normal;
+}
+
+.noticeModalMessage {
+	margin: 0;
 }
 
 .updateReleaseLink {
@@ -1416,7 +1424,8 @@ input[type="checkbox"]:checked::after {
 	display: none;
 }
 
-.updateModalActions {
+.updateModalActions,
+.noticeModalActions {
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;

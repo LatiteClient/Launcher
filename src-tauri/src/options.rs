@@ -9,6 +9,7 @@ use crate::launch_request::BuildKind;
 struct Options {
     misc_hide_on_close: bool,
     misc_close_after_injected: bool,
+    prevent_multiple_instances: bool,
     use_custom_dll: bool,
     custom_dll_path: String,
     launcher_language: String,
@@ -106,6 +107,7 @@ impl Default for Options {
         Self {
             misc_hide_on_close: false,
             misc_close_after_injected: false,
+            prevent_multiple_instances: true,
             use_custom_dll: false,
             custom_dll_path: String::new(),
             launcher_language: "auto".to_string(),
@@ -120,6 +122,7 @@ impl Options {
         match id {
             "misc_hide_on_close" => Ok(&self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&self.misc_close_after_injected),
+            "prevent_multiple_instances" => Ok(&self.prevent_multiple_instances),
             "use_custom_dll" => Ok(&self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
@@ -129,6 +132,7 @@ impl Options {
         match id {
             "misc_hide_on_close" => Ok(&mut self.misc_hide_on_close),
             "misc_close_after_injected" => Ok(&mut self.misc_close_after_injected),
+            "prevent_multiple_instances" => Ok(&mut self.prevent_multiple_instances),
             "use_custom_dll" => Ok(&mut self.use_custom_dll),
             _ => Err(format!("Unknown option: {id}")),
         }
