@@ -57,7 +57,7 @@ We welcome people to contribute code via making a PR (Pull Request) to the Launc
 - [Twitter](https://twitter.com/LatiteClient)
 - [YouTube](https://youtube.com/@LatiteClientMC)
 
-> **Note:** These are the only official social media accounts for Latite Client. If an entity claims to be Latite Client but does not match the accounts above, they are impersonating us.
+> **Note: These are the only official social medias Latite Client has. If an entity is claiming to be Latite Client and does not have the same socials as the ones listed above, they are impersonating us.**
 
 ## FAQ
 
@@ -75,14 +75,6 @@ No — check out our Android project <a href="https://atlasclient.net">Atlas Cli
 </details>
 
 [View Full FAQ](https://latiteclient.com/#faq)
-
-## Community
-
-- [Discord Server](https://discord.gg/GpV3w5tyBs)
-- [Twitter](https://twitter.com/LatiteClient)
-- [YouTube](https://youtube.com/@LatiteClientMC)
-
-> **Note: These are the only official social medias Latite Client has. If an entity is claiming to be Latite Client and does not have the same socials as the ones listed above, they are impersonating us.**
 
 ## License
 
