@@ -3,8 +3,9 @@ use serde_json::Value;
 const AUTO_LOCALE_ID: &str = "auto";
 const DEFAULT_LOCALE_ID: &str = "en_US";
 const LANGUAGE_OPTION_ID: &str = "launcher_language";
-const LANGUAGE_FALLBACKS: &[(&str, &str)] = &[("es", "es_ES"), ("fa", "fa_IR")];
+const LANGUAGE_FALLBACKS: &[(&str, &str)] = &[("ar", "ar_SA"), ("es", "es_ES"), ("fa", "fa_IR")];
 const LOCALES: &[(&str, &str)] = &[
+    ("ar_SA", include_str!("../../src/locales/ar_SA.json")),
     ("cs_CZ", include_str!("../../src/locales/cs_CZ.json")),
     ("en_US", include_str!("../../src/locales/en_US.json")),
     ("es_ES", include_str!("../../src/locales/es_ES.json")),
