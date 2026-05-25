@@ -1394,6 +1394,15 @@ input[type="checkbox"]:checked::after {
 	margin: 0;
 }
 
+.launcherDialogMessage {
+	overflow-wrap: anywhere;
+	white-space: pre-line;
+}
+
+#launcherDialogModal[data-level="error"] .launcherDialogContent {
+	outline-color: #3b1616d6;
+}
+
 .updateReleaseLink {
 	width: fit-content;
 	border: none;

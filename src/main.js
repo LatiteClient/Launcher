@@ -87,6 +87,13 @@ const duplicateInstanceModalClose = document.getElementById(
 const duplicateInstanceOkButton = document.getElementById(
 	"duplicateInstanceOkButton",
 );
+const launcherDialogModal = document.getElementById("launcherDialogModal");
+const launcherDialogModalOverlay =
+	launcherDialogModal?.querySelector(".modalOverlay");
+const launcherDialogModalClose = document.getElementById("launcherDialogClose");
+const launcherDialogTitle = document.getElementById("launcherDialogTitle");
+const launcherDialogMessage = document.getElementById("launcherDialogMessage");
+const launcherDialogOkButton = document.getElementById("launcherDialogOkButton");
 
 let currentLocalePreference = AUTO_LOCALE;
 let currentSystemLocale = DEFAULT_LOCALE;
@@ -99,6 +106,8 @@ let launcherLanguageMenuDisplayTimer = null;
 let pendingLauncherUpdate = null;
 let launcherUpdateState = "idle";
 let currentLauncherVersion = null;
+let activeLauncherDialogResolve = null;
+const launcherDialogQueue = [];
 
 function buildLocaleRegistry(modules) {
 	const registry = {};
@@ -665,10 +674,77 @@ function applyTranslations() {
 	renderLanguageOptions();
 }
 
+function getDialogLevel(dialog) {
+	return dialog?.level === "error" ? "error" : "info";
+}
+
+function showLauncherDialog(dialog) {
+	if (
+		!launcherDialogModal ||
+		!launcherDialogTitle ||
+		!launcherDialogMessage ||
+		!launcherDialogOkButton
+	) {
+		return showNativeDialogFallback(dialog);
+	}
+
+	return new Promise((resolve) => {
+		launcherDialogQueue.push({
+			level: getDialogLevel(dialog),
+			message: translateUiMessage(dialog),
+			resolve,
+		});
+		showNextLauncherDialog();
+	});
+}
+
+function showNextLauncherDialog() {
+	if (
+		activeLauncherDialogResolve ||
+		!launcherDialogModal ||
+		!launcherDialogTitle ||
+		!launcherDialogMessage ||
+		!launcherDialogOkButton
+	) {
+		return;
+	}
+
+	const nextDialog = launcherDialogQueue.shift();
+	if (!nextDialog) {
+		return;
+	}
+
+	activeLauncherDialogResolve = nextDialog.resolve;
+	launcherDialogModal.dataset.level = nextDialog.level;
+	launcherDialogTitle.textContent = t("launcher.meta.title.name");
+	launcherDialogMessage.textContent = nextDialog.message;
+	launcherDialogOkButton.textContent = t("launcher.dialog.ok.name");
+	launcherDialogModal.classList.remove("hidden");
+	launcherDialogModal.setAttribute("aria-hidden", "false");
+	launcherDialogOkButton?.focus();
+}
+
+function closeLauncherDialog() {
+	if (!launcherDialogModal || !activeLauncherDialogResolve) {
+		return;
+	}
+
+	const resolve = activeLauncherDialogResolve;
+	activeLauncherDialogResolve = null;
+	launcherDialogModal.classList.add("hidden");
+	launcherDialogModal.setAttribute("aria-hidden", "true");
+	resolve();
+	showNextLauncherDialog();
+}
+
 async function showLocalizedDialog(dialog) {
+	await showLauncherDialog(dialog);
+}
+
+async function showNativeDialogFallback(dialog) {
 	await showMessage(translateUiMessage(dialog), {
 		title: t("launcher.meta.title.name"),
-		type: dialog.level,
+		type: getDialogLevel(dialog),
 	});
 }
 
@@ -1216,6 +1292,7 @@ function registerPrimaryEventListeners() {
 		if (event.key === "Escape") {
 			closeLauncherUpdateModal();
 			closeDuplicateInstanceModal();
+			closeLauncherDialog();
 		}
 	});
 
@@ -1228,6 +1305,9 @@ function registerPrimaryEventListeners() {
 		closeDuplicateInstanceModal,
 	);
 	duplicateInstanceOkButton?.addEventListener("click", closeDuplicateInstanceModal);
+	launcherDialogModalOverlay?.addEventListener("click", closeLauncherDialog);
+	launcherDialogModalClose?.addEventListener("click", closeLauncherDialog);
+	launcherDialogOkButton?.addEventListener("click", closeLauncherDialog);
 }
 
 async function initializeOptionInputs() {
@@ -1308,6 +1388,14 @@ async function registerTauriListeners() {
 	]);
 }
 
+async function notifyBackendUiReady() {
+	try {
+		await invoke("set_ui_ready");
+	} catch (error) {
+		console.error("Failed to mark launcher UI as ready:", error);
+	}
+}
+
 function minimizeWindow() {
 	invoke("minimize_window").catch((error) => {
 		console.error("Failed to minimize window:", error);
@@ -1351,6 +1439,7 @@ async function initializeApp() {
 	await initializeLocalization();
 	await registerTauriListeners();
 	registerPrimaryEventListeners();
+	await notifyBackendUiReady();
 	await Promise.all([
 		initializeOptionInputs(),
 		loadSavedCustomDllPath(),

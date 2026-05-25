@@ -464,8 +464,9 @@
               class="noticeModalMessage"
               data-i18n="launcher.instanceAlreadyOpen.message.name"
             >
-              Latite Client Launcher is already open. Use this window to launch
-              Latite Client, or close it before opening another copy.
+              Latite Client Launcher is already open. You can use this window to
+              launch Latite Client, or you close this window before opening
+              another instance.
             </p>
           </div>
           <div class="noticeModalActions">
@@ -476,6 +477,38 @@
               data-i18n="launcher.instanceAlreadyOpen.action.name"
             >
               Got it
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="launcherDialogModal" class="modal hidden" aria-hidden="true">
+        <div class="modalOverlay"></div>
+        <div class="modalContent noticeModalContent launcherDialogContent">
+          <div class="modalHeader noticeModalHeader">
+            <h2 id="launcherDialogTitle" data-i18n="launcher.meta.title.name">
+              Latite Client Launcher
+            </h2>
+            <img
+              src="./img/close.svg"
+              class="modalClose"
+              id="launcherDialogClose"
+            />
+          </div>
+          <div class="noticeModalBody">
+            <p
+              class="noticeModalMessage launcherDialogMessage"
+              id="launcherDialogMessage"
+            ></p>
+          </div>
+          <div class="noticeModalActions">
+            <button
+              type="button"
+              id="launcherDialogOkButton"
+              class="customDllActionButton primary"
+              data-i18n="launcher.dialog.ok.name"
+            >
+              Ok
             </button>
           </div>
         </div>

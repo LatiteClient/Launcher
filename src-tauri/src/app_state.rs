@@ -9,6 +9,7 @@ pub struct AppState {
     options: Mutex<OptionsStore>,
     is_injecting: AtomicBool,
     is_tray_icon_visible: AtomicBool,
+    is_ui_ready: AtomicBool,
 }
 
 pub struct InjectionGuard<'a> {
@@ -21,6 +22,7 @@ impl AppState {
             options: Mutex::new(options),
             is_injecting: AtomicBool::new(false),
             is_tray_icon_visible: AtomicBool::new(false),
+            is_ui_ready: AtomicBool::new(false),
         }
     }
 
@@ -86,6 +88,14 @@ impl AppState {
 
     pub fn set_tray_icon_visible(&self, visible: bool) {
         self.is_tray_icon_visible.store(visible, Ordering::Release);
+    }
+
+    pub fn is_ui_ready(&self) -> bool {
+        self.is_ui_ready.load(Ordering::Acquire)
+    }
+
+    pub fn set_ui_ready(&self) {
+        self.is_ui_ready.store(true, Ordering::Release);
     }
 
     fn lock_options(&self) -> Result<MutexGuard<'_, OptionsStore>, String> {

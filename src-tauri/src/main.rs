@@ -22,6 +22,7 @@ use launch_request::{BuildKind, InjectRequest};
 use tauri::{
     CustomMenuItem, Manager, State, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
 };
+use ui::UiDialog;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "launcher-tray";
@@ -39,7 +40,10 @@ async fn inject(
     let close_after_injected = match state.get_bool_option("misc_close_after_injected") {
         Ok(value) => value,
         Err(error) => {
-            dialogs::show_error(&error);
+            ui::emit_dialog(
+                &app_handle,
+                &UiDialog::error("launcher.error.generic.name").with_arg(&error),
+            );
             return Err(error);
         }
     };
@@ -48,7 +52,10 @@ async fn inject(
 
     if let Err(error) = &result {
         if !error.dialog_already_shown() {
-            dialogs::show_error(error.message());
+            ui::emit_dialog(
+                &app_handle,
+                &UiDialog::error("launcher.error.generic.name").with_arg(error.message()),
+            );
         }
     } else if close_after_injected {
         app_handle.exit(0);
@@ -92,6 +99,11 @@ fn update_option(
 #[tauri::command]
 fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
     state.get_bool_option(id)
+}
+
+#[tauri::command]
+fn set_ui_ready(state: State<'_, AppState>) {
+    state.set_ui_ready();
 }
 
 #[tauri::command]
@@ -213,9 +225,21 @@ fn schedule_restore_main_window(app_handle: &tauri::AppHandle) {
 
     tauri::async_runtime::spawn_blocking(move || {
         if let Err(error) = restore_main_window(&app_handle) {
-            dialogs::show_error(&error);
+            ui::emit_dialog(
+                &app_handle,
+                &UiDialog::error("launcher.error.generic.name").with_arg(&error),
+            );
         }
     });
+}
+
+fn show_duplicate_instance_fallback_dialog() {
+    let message = localization::get_translation("launcher.instanceAlreadyOpen.message.name")
+        .unwrap_or_else(|| {
+            "Latite Client Launcher is already open. You can use this window to launch Latite Client, or you close this window before opening another instance.".to_string()
+        });
+
+    dialogs::show_info(&message);
 }
 
 fn ensure_tray(app_handle: &tauri::AppHandle, state: &AppState) -> Result<(), String> {
@@ -336,8 +360,15 @@ fn main() {
             if let Err(error) = single_instance::start_duplicate_attempt_monitor(move || {
                 schedule_restore_main_window(&app_handle);
 
+                let state = app_handle.state::<AppState>();
+                if !state.is_ui_ready() {
+                    show_duplicate_instance_fallback_dialog();
+                    return;
+                }
+
                 if let Err(error) = app_handle.emit_all(DUPLICATE_INSTANCE_EVENT, ()) {
                     crate::log_error!("Failed to emit duplicate instance event: {error}");
+                    show_duplicate_instance_fallback_dialog();
                 }
             }) {
                 crate::log_error!("Failed to monitor duplicate launcher attempts: {error}");
@@ -359,12 +390,18 @@ fn main() {
                         api.prevent_close();
 
                         if let Err(error) = hide_main_window_to_tray(&app_handle, state.inner()) {
-                            dialogs::show_error(&error);
+                            ui::emit_dialog(
+                                &app_handle,
+                                &UiDialog::error("launcher.error.generic.name").with_arg(&error),
+                            );
                         }
                     }
                     Ok(false) => {}
                     Err(error) => {
-                        dialogs::show_error(&error);
+                        ui::emit_dialog(
+                            &app_handle,
+                            &UiDialog::error("launcher.error.generic.name").with_arg(&error),
+                        );
                     }
                 }
             }
@@ -373,6 +410,7 @@ fn main() {
             inject,
             update_option,
             get_option,
+            set_ui_ready,
             get_string_option,
             update_string_option,
             get_latite_build,
