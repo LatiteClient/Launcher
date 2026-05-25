@@ -1,6 +1,6 @@
 [package]
 name = "latite-launcher"
-version = "1.0.1"
+version = "1.0.2"
 description = "Latite Client Launcher"
 authors = ["Plextora"]
 edition = "2021"
