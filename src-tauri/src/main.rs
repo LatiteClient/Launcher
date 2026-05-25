@@ -236,7 +236,7 @@ fn schedule_restore_main_window(app_handle: &tauri::AppHandle) {
 fn show_duplicate_instance_fallback_dialog() {
     let message = localization::get_translation("launcher.instanceAlreadyOpen.message.name")
         .unwrap_or_else(|| {
-            "Latite Client Launcher is already open. You can use this window to launch Latite Client, or you close this window before opening another instance.".to_string()
+            "A second launcher window was prevented from opening because Latite Client Launcher is already running. Use this window to launch Latite Client.\n\nYou can disable this behavior in Settings.".to_string()
         });
 
     dialogs::show_info(&message);

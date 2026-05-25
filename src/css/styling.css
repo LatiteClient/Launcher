@@ -1392,6 +1392,7 @@ input[type="checkbox"]:checked::after {
 
 .noticeModalMessage {
 	margin: 0;
+	white-space: pre-line;
 }
 
 .launcherDialogMessage {
