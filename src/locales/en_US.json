@@ -44,7 +44,7 @@
     "launcher.dialog.title.name": "Latite Client",
     "launcher.dialog.selectDll.name": "Select a DLL to inject",
     "launcher.dialog.dllFilter.name": "DLL File",
-    "launcher.dialog.ok.name": "Ok",
+    "launcher.dialog.ok.name": "OK",
     "launcher.dialog.updateAvailable.name": "A new version of the Latite Launcher is available. Latest version: {}",
     "launcher.update.title.name": "Launcher update",
     "launcher.update.available.name": "A new launcher version is available: {}",
