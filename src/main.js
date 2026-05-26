@@ -277,6 +277,55 @@ function translateUiMessage(message) {
 	return t(normalizedMessage.key, normalizedMessage.args);
 }
 
+function getErrorReportMessage() {
+	return {
+		prefix: t("launcher.error.reportBug.name"),
+		note: t("launcher.error.reportBugPinned.name"),
+	};
+}
+
+function getPlainErrorReportMessage() {
+	const { prefix, note } = getErrorReportMessage();
+	return `${prefix}${note}`;
+}
+
+function renderMessage(element, message) {
+	if (!element) {
+		return;
+	}
+
+	element.replaceChildren(document.createTextNode(message));
+}
+
+function renderErrorMessage(element, message) {
+	if (!element) {
+		return;
+	}
+
+	const { prefix, note } = getErrorReportMessage();
+	const noteElement = document.createElement("strong");
+	noteElement.className = "errorReportNote";
+	noteElement.textContent = note;
+
+	element.replaceChildren(
+		document.createTextNode(`${message}\n\n${prefix}`),
+		noteElement,
+	);
+}
+
+function renderDialogMessage(element, { level, message }) {
+	if (!element) {
+		return;
+	}
+
+	if (level === "error") {
+		renderErrorMessage(element, message);
+		return;
+	}
+
+	renderMessage(element, message);
+}
+
 function formatUpdaterDiagnostic(error) {
 	if (error instanceof Error) {
 		return error.stack || error.message;
@@ -337,6 +386,7 @@ function setLauncherUpdateState(state, version = pendingLauncherUpdate?.version)
 
 	if (state === "failed") {
 		updateModalMessage.textContent = t("launcher.update.available.name", version);
+		renderErrorMessage(updateModalError, t("launcher.update.failed.name"));
 		updateModalError?.classList.remove("hidden");
 	}
 }
@@ -717,7 +767,7 @@ function showNextLauncherDialog() {
 	activeLauncherDialogResolve = nextDialog.resolve;
 	launcherDialogModal.dataset.level = nextDialog.level;
 	launcherDialogTitle.textContent = t("launcher.meta.title.name");
-	launcherDialogMessage.textContent = nextDialog.message;
+	renderDialogMessage(launcherDialogMessage, nextDialog);
 	launcherDialogOkButton.textContent = t("launcher.dialog.ok.name");
 	launcherDialogModal.classList.remove("hidden");
 	launcherDialogModal.setAttribute("aria-hidden", "false");
@@ -742,9 +792,14 @@ async function showLocalizedDialog(dialog) {
 }
 
 async function showNativeDialogFallback(dialog) {
-	await showMessage(translateUiMessage(dialog), {
+	const level = getDialogLevel(dialog);
+	const message = translateUiMessage(dialog);
+	const nativeMessage =
+		level === "error" ? `${message}\n\n${getPlainErrorReportMessage()}` : message;
+
+	await showMessage(nativeMessage, {
 		title: t("launcher.meta.title.name"),
-		type: getDialogLevel(dialog),
+		type: level,
 	});
 }
 
