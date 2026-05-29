@@ -98,6 +98,16 @@ fn update_option(
 
 #[tauri::command]
 fn get_option(id: &str, state: State<'_, AppState>) -> Result<bool, String> {
+    let valid_options = [
+        PREVENT_MULTIPLE_INSTANCES_OPTION_ID,
+        "misc_close_after_injected",
+        "misc_hide_on_close",
+    ];
+    
+    if !valid_options.contains(&id) {
+        return Err(format!("Unknown option: {}", id));
+    }
+    
     state.get_bool_option(id)
 }
 
