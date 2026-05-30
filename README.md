@@ -2,6 +2,7 @@
 
 [![Discord](https://img.shields.io/discord/885656043521179680)](https://discord.gg/GpV3w5tyBs)
 [![GitHub release](https://img.shields.io/github/v/release/LatiteClient/Launcher)](https://github.com/LatiteClient/Launcher/releases/latest)
+[![Crowdin](https://badges.crowdin.net/LatiteClient/localized.svg)](https://crowdin.com/project/LatiteClient)
 
 **Latite Client Launcher** is the official launcher for [Latite Client](https://github.com/LatiteClient/Latite), built with [Tauri](https://github.com/tauri-apps/tauri).
 
