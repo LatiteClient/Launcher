@@ -69,6 +69,7 @@ const githubLink = document.getElementById("github");
 const discordLink = document.getElementById("discord");
 const openFolderButton = document.getElementById("openFolder");
 const launcherContainer = document.querySelector(".launcher");
+const centerSettings = document.querySelector(".centersettings");
 const latiteBuildInputs = document.querySelectorAll(".latite_build_input");
 const launcherVersionLabel = document.getElementById("launcherVersionLabel");
 const updateModal = document.getElementById("updateModal");
@@ -520,6 +521,27 @@ function focusLauncherLanguageOption(index) {
 	optionButtons[wrappedIndex]?.focus();
 }
 
+function isPointerInVerticalScrollbar(event, element) {
+	if (
+		event.target !== element ||
+		element.scrollHeight <= element.clientHeight
+	) {
+		return false;
+	}
+
+	const bounds = element.getBoundingClientRect();
+	const scrollbarWidth = bounds.width - element.clientWidth;
+	if (scrollbarWidth <= 0) {
+		return false;
+	}
+
+	if (getComputedStyle(element).direction === "rtl") {
+		return event.clientX <= bounds.left + scrollbarWidth;
+	}
+
+	return event.clientX >= bounds.right - scrollbarWidth;
+}
+
 function setLauncherLanguageMenuOpen(isOpen, { focusSelected = false } = {}) {
 	if (
 		!launcherLanguageCustomSelect ||
@@ -558,16 +580,15 @@ function setLauncherLanguageMenuOpen(isOpen, { focusSelected = false } = {}) {
 	}
 
 	launcherLanguageTrigger.setAttribute("aria-expanded", String(isOpen));
-	const centerSettingsEl = document.querySelector(".centersettings");
 	// toggle the dropdown-open marker for any existing styles that rely on it
-	centerSettingsEl?.classList.toggle("dropdown-open", isOpen);
+	centerSettings?.classList.toggle("dropdown-open", isOpen);
 
 	// Animate other setting sections to opacity:0, then set display:none after the
 	// transition finishes. When closing, restore display and remove the fade class
 	// so sections animate back in.
-	if (centerSettingsEl) {
+	if (centerSettings) {
 		const otherSections = Array.from(
-			centerSettingsEl.querySelectorAll(
+			centerSettings.querySelectorAll(
 				".settingsection:not(#languageSection), .settingsVersion",
 			),
 		);
@@ -1261,6 +1282,13 @@ function registerPrimaryEventListeners() {
 		if (
 			event.target instanceof Node &&
 			launcherLanguageCustomSelect.contains(event.target)
+		) {
+			return;
+		}
+
+		if (
+			centerSettings &&
+			isPointerInVerticalScrollbar(event, centerSettings)
 		) {
 			return;
 		}
