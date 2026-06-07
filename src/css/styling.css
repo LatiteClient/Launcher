@@ -1417,6 +1417,11 @@ input[type="checkbox"]:checked::after {
   outline-color: #3b1616d6;
 }
 
+#launcherDialogOkButton:focus,
+#launcherDialogOkButton:focus-visible {
+  outline: none;
+}
+
 .updateReleaseLink {
   width: fit-content;
   border: none;
