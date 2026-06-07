@@ -70,7 +70,7 @@ impl UiDialog {
 
 pub fn emit_dialog(app_handle: &AppHandle, dialog: &UiDialog) {
     if !is_ui_ready(app_handle) {
-        show_native_fallback(dialog);
+        show_native_fallback(app_handle, dialog);
         return;
     }
 
@@ -80,7 +80,7 @@ pub fn emit_dialog(app_handle: &AppHandle, dialog: &UiDialog) {
             dialog.key,
             dialog.level
         );
-        show_native_fallback(dialog);
+        show_native_fallback(app_handle, dialog);
     }
 }
 
@@ -91,12 +91,18 @@ fn is_ui_ready(app_handle: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
-fn show_native_fallback(dialog: &UiDialog) {
+fn show_native_fallback(app_handle: &AppHandle, dialog: &UiDialog) {
     let message = translate_dialog_message(dialog);
 
     match dialog.level {
         UiDialogLevel::Info => crate::dialogs::show_info(&message),
-        UiDialogLevel::Error => crate::dialogs::show_error(&message),
+        UiDialogLevel::Error => {
+            if let Err(error) = crate::restore_main_window(app_handle) {
+                crate::log_error!("Failed to focus launcher window for error dialog: {error}");
+            }
+
+            crate::dialogs::show_error(&message);
+        }
     }
 }
 

@@ -136,6 +136,11 @@ fn minimize_window(app_handle: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn focus_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    restore_main_window(&app_handle)
+}
+
+#[tauri::command]
 fn close_window(app_handle: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     close_or_hide_main_window(&app_handle, state.inner())
 }
@@ -192,7 +197,7 @@ fn hide_main_window_to_tray(app_handle: &tauri::AppHandle, state: &AppState) -> 
         .map_err(|error| format!("Failed to hide window to tray: {error}"))
 }
 
-fn restore_main_window(app_handle: &tauri::AppHandle) -> Result<(), String> {
+pub(crate) fn restore_main_window(app_handle: &tauri::AppHandle) -> Result<(), String> {
     let window = get_main_window(app_handle)?;
 
     window
@@ -416,6 +421,7 @@ fn main() {
             get_latite_build,
             update_latite_build,
             minimize_window,
+            focus_main_window,
             close_window,
             open_folder,
             get_launcher_version,

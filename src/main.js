@@ -748,7 +748,7 @@ function showLauncherDialog(dialog) {
 	});
 }
 
-function showNextLauncherDialog() {
+async function showNextLauncherDialog() {
 	if (
 		activeLauncherDialogResolve ||
 		!launcherDialogModal ||
@@ -765,6 +765,15 @@ function showNextLauncherDialog() {
 	}
 
 	activeLauncherDialogResolve = nextDialog.resolve;
+
+	if (nextDialog.level === "error") {
+		try {
+			await invoke("focus_main_window");
+		} catch (error) {
+			console.error("Failed to focus launcher window for error dialog:", error);
+		}
+	}
+
 	launcherDialogModal.dataset.level = nextDialog.level;
 	launcherDialogTitle.textContent = t("launcher.meta.title.name");
 	renderDialogMessage(launcherDialogMessage, nextDialog);
