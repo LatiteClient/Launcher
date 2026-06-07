@@ -1,11 +1,11 @@
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::{hash_map::DefaultHasher, HashSet},
     hash::{Hash, Hasher},
     path::{Path, PathBuf},
     process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex, OnceLock,
     },
     thread,
     time::{Duration, Instant},
@@ -28,7 +28,6 @@ const STATUS_IDLE: &str = "launcher.status.idle.name";
 const STATUS_INJECTING: &str = "launcher.status.injecting.name";
 const STATUS_OPENING_MINECRAFT: &str = "launcher.status.openingMinecraft.name";
 const STATUS_LOADING_MINECRAFT: &str = "launcher.status.loadingMinecraft.name";
-const STATUS_FINALIZING: &str = "launcher.status.finalizing.name";
 const STATUS_SUCCESS: &str = "launcher.status.success.name";
 const STATUS_INJECT_FAILED: &str = "launcher.status.injectFailed.name";
 const STATUS_LAUNCH_FAILED: &str = "launcher.status.launchFailed.name";
@@ -44,10 +43,9 @@ const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
 const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
 const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
 const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const POST_INJECTION_MONITOR_DURATION: Duration = Duration::from_secs(15);
-const MINECRAFT_LOADED_MODULE_COUNT: usize = 165;
-const MINECRAFT_MODULE_POLL_DELAY: Duration = Duration::from_millis(100);
 const MINECRAFT_LOADING_DELAY: Duration = Duration::from_secs(6);
+
+static MONITORED_PROCESS_IDS: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct LaunchError {
@@ -159,11 +157,6 @@ impl Drop for StatusAnimation {
     }
 }
 
-enum ProcessMonitorOutcome {
-    Running,
-    Exited(u32),
-}
-
 struct ResolvedDll {
     path: PathBuf,
     metadata: Option<LatiteDllMetadata>,
@@ -261,31 +254,59 @@ fn inject_with_status(resolved_dll: ResolvedDll, app_handle: AppHandle) -> Resul
         }
     };
 
-    match monitor_process_after_injection(&target_process, &status)? {
-        ProcessMonitorOutcome::Running => {
-            status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
-            Ok(())
-        }
-        ProcessMonitorOutcome::Exited(exit_code) if exit_code != 0 => {
-            Err(report_failure(
-                &status,
-                STATUS_INJECT_FAILED,
-                UiDialog::error("launcher.error.injectedProcessExited.name")
-                    .with_arg(pid)
-                    .with_arg(format!("{exit_code:#x}")),
-                format!(
-                    "Minecraft process {pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
-                ),
-            ))
-        }
-        ProcessMonitorOutcome::Exited(exit_code) => {
-            crate::log_info!(
-                "Process {pid} exited after injection with exit code {exit_code:#x}; treating injection as successful."
-            );
-            status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
-            Ok(())
+    status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
+    start_process_lifetime_monitor(target_process, status);
+    Ok(())
+}
+
+fn start_process_lifetime_monitor(target_process: injector::TargetProcess, status: StatusEmitter) {
+    let target_pid = target_process.pid();
+    let monitored_process_ids = MONITORED_PROCESS_IDS.get_or_init(|| Mutex::new(HashSet::new()));
+
+    {
+        let mut monitored_process_ids = monitored_process_ids
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        if !monitored_process_ids.insert(target_pid) {
+            crate::log_info!("Minecraft process {target_pid} is already being monitored.");
+            return;
         }
     }
+
+    thread::spawn(move || {
+        crate::log_info!("Monitoring Minecraft process {target_pid} for its remaining lifetime.");
+
+        match injector::wait_for_process_exit_forever(&target_process) {
+            Ok(0) => {
+                crate::log_info!("Minecraft process {target_pid} closed normally.");
+            }
+            Ok(exit_code) => {
+                let message = format!(
+                    "Minecraft process {target_pid} closed after DLL injection with exit code {exit_code:#x}. The DLL may be incompatible with your Minecraft version."
+                );
+                let _ = report_failure(
+                    &status,
+                    STATUS_INJECT_FAILED,
+                    UiDialog::error("launcher.error.injectedProcessExited.name")
+                        .with_arg(target_pid)
+                        .with_arg(format!("{exit_code:#x}")),
+                    message,
+                );
+            }
+            Err(error) => {
+                crate::log_error!(
+                    "Failed to monitor Minecraft process {target_pid} for its lifetime: {error}"
+                );
+            }
+        }
+
+        let mut monitored_process_ids = MONITORED_PROCESS_IDS
+            .get_or_init(|| Mutex::new(HashSet::new()))
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        monitored_process_ids.remove(&target_pid);
+    });
 }
 
 fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), LaunchError> {
@@ -482,73 +503,6 @@ fn wait_for_minimum_duration(started_at: Instant, minimum_duration: Duration) {
 
     if elapsed < minimum_duration {
         thread::sleep(minimum_duration - elapsed);
-    }
-}
-
-fn monitor_process_after_injection(
-    target_process: &injector::TargetProcess,
-    status: &StatusEmitter,
-) -> Result<ProcessMonitorOutcome, LaunchError> {
-    let _animation: StatusAnimation = StatusAnimation::start(status.clone(), STATUS_FINALIZING);
-    let target_pid = target_process.pid();
-
-    match injector::wait_for_process_module_count_above(
-        target_process,
-        MINECRAFT_LOADED_MODULE_COUNT,
-        MINECRAFT_MODULE_POLL_DELAY,
-    ) {
-        Ok(injector::ModuleLoadWaitOutcome::Loaded(module_count)) => {
-            crate::log_info!(
-                "Process {target_pid} loaded {module_count} modules, starting post-injection monitoring."
-            );
-        }
-        Ok(injector::ModuleLoadWaitOutcome::Exited(exit_code)) => {
-            crate::log_info!(
-                "Process {target_pid} exited before reaching more than {MINECRAFT_LOADED_MODULE_COUNT} loaded modules with exit code {exit_code:#x}."
-            );
-            return Ok(ProcessMonitorOutcome::Exited(exit_code));
-        }
-        Err(error) => {
-            crate::log_error!("Failed to wait for process {target_pid} module load count: {error}");
-            return Err(report_failure(
-                status,
-                STATUS_VERIFY_FAILED,
-                UiDialog::error("launcher.error.verifyInjection.name").with_arg(&error),
-                format!(
-                    "Failed to wait for Minecraft process {target_pid} to finish loading before monitoring: {error}"
-                ),
-            ));
-        }
-    }
-
-    let monitor_started_at = Instant::now();
-
-    match injector::wait_for_process_exit(target_process, POST_INJECTION_MONITOR_DURATION) {
-        Ok(injector::ProcessWaitOutcome::Running) => {
-            crate::log_info!(
-                "Process {target_pid} survived {}ms monitoring period - injection successful",
-                POST_INJECTION_MONITOR_DURATION.as_millis()
-            );
-            Ok(ProcessMonitorOutcome::Running)
-        }
-        Ok(injector::ProcessWaitOutcome::Exited(exit_code)) => {
-            let elapsed_ms = monitor_started_at.elapsed().as_millis();
-            crate::log_info!(
-                "Process {target_pid} exited after {elapsed_ms}ms with exit code {exit_code:#x} - DLL may be incompatible or crashed"
-            );
-            Ok(ProcessMonitorOutcome::Exited(exit_code))
-        }
-        Err(error) => {
-            crate::log_error!("Failed to monitor process {target_pid}: {error}");
-            Err(report_failure(
-                status,
-                STATUS_VERIFY_FAILED,
-                UiDialog::error("launcher.error.verifyInjection.name").with_arg(&error),
-                format!(
-                    "Failed to confirm Minecraft process {target_pid} stayed open after injection: {error}"
-                ),
-            ))
-        }
     }
 }
 
