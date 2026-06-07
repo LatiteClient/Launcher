@@ -2,7 +2,6 @@ use std::{
     collections::{hash_map::DefaultHasher, HashSet},
     hash::{Hash, Hasher},
     path::{Path, PathBuf},
-    process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex, OnceLock,
@@ -21,8 +20,20 @@ use crate::{
     version_info,
 };
 use tauri::{AppHandle, Manager};
+use windows::{
+    core::{w, PCWSTR},
+    Win32::{
+        Foundation::RPC_E_CHANGED_MODE,
+        System::Com::{
+            CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_LOCAL_SERVER,
+            COINIT_MULTITHREADED,
+        },
+        UI::Shell::{ApplicationActivationManager, IApplicationActivationManager, AO_NONE},
+    },
+};
 
 const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
+const MC_AUMID: PCWSTR = w!("MICROSOFT.MINECRAFTUWP_8wekyb3d8bbwe!Game");
 const STATUS_EVENT: &str = "inject_status";
 const STATUS_IDLE: &str = "launcher.status.idle.name";
 const STATUS_INJECTING: &str = "launcher.status.injecting.name";
@@ -744,14 +755,36 @@ async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
 }
 
 fn launch_minecraft() -> Result<(), String> {
-    let mut process = Command::new("explorer")
-        .arg("minecraft:")
-        .spawn()
-        .map_err(|_| "Minecraft does not seem to be installed.".to_string())?;
+    struct ComInitializationGuard(bool);
 
-    process
-        .wait()
-        .map_err(|error| format!("Failed while launching Minecraft: {error}"))?;
+    impl Drop for ComInitializationGuard {
+        fn drop(&mut self) {
+            if self.0 {
+                unsafe { CoUninitialize() };
+            }
+        }
+    }
+
+    unsafe {
+        let initialization_result = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let _com_guard = ComInitializationGuard(initialization_result.is_ok());
+
+        if initialization_result.is_err() && initialization_result != RPC_E_CHANGED_MODE {
+            return Err(format!(
+                "Failed to initialize COM while launching Minecraft: {}",
+                windows::core::Error::from_hresult(initialization_result)
+            ));
+        }
+
+        let activation_manager: IApplicationActivationManager =
+            CoCreateInstance(&ApplicationActivationManager, None, CLSCTX_LOCAL_SERVER).map_err(
+                |error| format!("Failed to create the application activation manager: {error}"),
+            )?;
+
+        activation_manager
+            .ActivateApplication(MC_AUMID, PCWSTR::null(), AO_NONE)
+            .map_err(|_| "Minecraft does not seem to be installed.".to_string())?;
+    }
 
     Ok(())
 }
