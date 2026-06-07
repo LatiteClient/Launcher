@@ -1419,8 +1419,8 @@ input[type="checkbox"]:checked::after {
   outline-color: #3b1616d6;
 }
 
-#launcherDialogOkButton:focus,
-#launcherDialogOkButton:focus-visible {
+.modal .customDllActionButton:focus,
+.modal .customDllActionButton:focus-visible {
   outline: none;
 }
 
