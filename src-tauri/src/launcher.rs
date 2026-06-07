@@ -32,31 +32,6 @@ use windows::{
     },
 };
 
-const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
-const MC_AUMID: PCWSTR = w!("MICROSOFT.MINECRAFTUWP_8wekyb3d8bbwe!Game");
-const STATUS_EVENT: &str = "inject_status";
-const STATUS_IDLE: &str = "launcher.status.idle.name";
-const STATUS_DOWNLOADING_ASSETS: &str = "launcher.status.downloadingAssets.name";
-const STATUS_INJECTING: &str = "launcher.status.injecting.name";
-const STATUS_OPENING_MINECRAFT: &str = "launcher.status.openingMinecraft.name";
-const STATUS_LOADING_MINECRAFT: &str = "launcher.status.loadingMinecraft.name";
-const STATUS_SUCCESS: &str = "launcher.status.success.name";
-const STATUS_INJECT_FAILED: &str = "launcher.status.injectFailed.name";
-const STATUS_LAUNCH_FAILED: &str = "launcher.status.launchFailed.name";
-const STATUS_MINECRAFT_NOT_FOUND: &str = "launcher.status.minecraftNotFound.name";
-const STATUS_VERIFY_FAILED: &str = "launcher.status.verifyFailed.name";
-const STATUS_PREPARING_DLL: &str = "launcher.status.preparingDll.name";
-const STATUS_INJECTION_ERROR: &str = "launcher.status.injectionError.name";
-const STATUS_INVALID_DLL_PATH: &str = "launcher.status.invalidDllPath.name";
-const STATUS_UNSUPPORTED_MINECRAFT: &str = "launcher.status.unsupportedMinecraft.name";
-
-const PROCESS_LOOKUP_ATTEMPTS: usize = 100;
-const PROCESS_LOOKUP_DELAY: Duration = Duration::from_millis(50);
-const STATUS_ANIMATION_DELAY: Duration = Duration::from_millis(300);
-const INJECTION_MIN_STATUS_TIME: Duration = Duration::from_secs(5);
-const FAILURE_STATUS_TIME: Duration = Duration::from_secs(3);
-const MINECRAFT_LOADING_DELAY: Duration = Duration::from_secs(6);
-
 static MONITORED_PROCESS_IDS: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
 
 #[derive(Debug)]
@@ -108,7 +83,7 @@ impl StatusEmitter {
     }
 
     fn emit(&self, message: UiMessage) {
-        if let Err(error) = self.app_handle.emit_all(STATUS_EVENT, &message) {
+        if let Err(error) = self.app_handle.emit_all("inject_status", &message) {
             crate::log_error!("Failed to emit injection status '{}': {error}", message.key);
         }
     }
@@ -124,7 +99,7 @@ impl StatusEmitter {
     fn show_then_idle(&self, status: UiMessage, delay: Duration) {
         self.emit(status);
         thread::sleep(delay);
-        self.emit(UiMessage::new(STATUS_IDLE));
+        self.emit(UiMessage::new("launcher.status.idle.name"));
     }
 }
 
@@ -146,7 +121,7 @@ impl StatusAnimation {
                 let current_status = UiMessage::new(label_key).with_arg(dots[dot_index]);
                 status.emit(current_status);
                 dot_index = (dot_index + 1) % dots.len();
-                thread::sleep(STATUS_ANIMATION_DELAY);
+                thread::sleep(Duration::from_millis(300));
             }
         });
 
@@ -201,14 +176,14 @@ pub async fn inject(
             {
                 report_failure(
                     &status,
-                    STATUS_INVALID_DLL_PATH,
+                    "launcher.status.invalidDllPath.name",
                     UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
                     error,
                 )
             } else {
                 report_failure(
                     &status,
-                    STATUS_PREPARING_DLL,
+                    "launcher.status.preparingDll.name",
                     UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
                     error,
                 )
@@ -224,7 +199,7 @@ pub async fn inject(
         let message = format!("Injection task failed: {error}");
         report_failure(
             &status,
-            STATUS_INJECTION_ERROR,
+            "launcher.status.injectionError.name",
             UiDialog::error("launcher.error.launchTaskFailed.name").with_arg(&message),
             message,
         )
@@ -238,8 +213,9 @@ fn inject_with_status(resolved_dll: ResolvedDll, app_handle: AppHandle) -> Resul
     // If Minecraft was just launched, show loading animation before injecting
     // If it was already running, skip straight to injection
     if !was_already_running {
-        let _loading_animation = StatusAnimation::start(status.clone(), STATUS_LOADING_MINECRAFT);
-        thread::sleep(MINECRAFT_LOADING_DELAY);
+        let _loading_animation =
+            StatusAnimation::start(status.clone(), "launcher.status.loadingMinecraft.name");
+        thread::sleep(Duration::from_secs(6));
     }
 
     if let Some(metadata) = &resolved_dll.metadata {
@@ -247,13 +223,14 @@ fn inject_with_status(resolved_dll: ResolvedDll, app_handle: AppHandle) -> Resul
     }
 
     let injection_started_at = Instant::now();
-    let injection_animation = StatusAnimation::start(status.clone(), STATUS_INJECTING);
+    let injection_animation =
+        StatusAnimation::start(status.clone(), "launcher.status.injecting.name");
     let injection_result = injector::open_target_process(pid).and_then(|target_process| {
         injector::inject_dll(&target_process, &resolved_dll.path)?;
         Ok(target_process)
     });
 
-    wait_for_minimum_duration(injection_started_at, INJECTION_MIN_STATUS_TIME);
+    wait_for_minimum_duration(injection_started_at, Duration::from_secs(5));
     drop(injection_animation);
 
     let target_process = match injection_result {
@@ -261,14 +238,17 @@ fn inject_with_status(resolved_dll: ResolvedDll, app_handle: AppHandle) -> Resul
         Err(error) => {
             return Err(report_failure(
                 &status,
-                STATUS_INJECT_FAILED,
+                "launcher.status.injectFailed.name",
                 UiDialog::error("launcher.error.injectFailed.name").with_arg(&error),
                 error,
             ));
         }
     };
 
-    status.show_then_idle(UiMessage::new(STATUS_SUCCESS), FAILURE_STATUS_TIME);
+    status.show_then_idle(
+        UiMessage::new("launcher.status.success.name"),
+        Duration::from_secs(3),
+    );
     start_process_lifetime_monitor(target_process, status);
     Ok(())
 }
@@ -301,7 +281,7 @@ fn start_process_lifetime_monitor(target_process: injector::TargetProcess, statu
                 );
                 let _ = report_failure(
                     &status,
-                    STATUS_INJECT_FAILED,
+                    "launcher.status.injectFailed.name",
                     UiDialog::error("launcher.error.injectedProcessExited.name")
                         .with_arg(target_pid)
                         .with_arg(format!("{exit_code:#x}")),
@@ -324,10 +304,10 @@ fn start_process_lifetime_monitor(target_process: injector::TargetProcess, statu
 }
 
 fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), LaunchError> {
-    if let Some(pid) = injector::find_process_id(MC_PROCESS_NAME).map_err(|error| {
+    if let Some(pid) = injector::find_process_id("Minecraft.Windows.exe").map_err(|error| {
         report_failure(
             status,
-            STATUS_INJECT_FAILED,
+            "launcher.status.injectFailed.name",
             UiDialog::error("launcher.error.injectFailed.name").with_arg(&error),
             error,
         )
@@ -337,21 +317,21 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
     }
 
     crate::log_info!("Minecraft process not found - launching Minecraft");
-    status.emit_key(STATUS_OPENING_MINECRAFT);
+    status.emit_key("launcher.status.openingMinecraft.name");
 
     if let Err(error) = launch_minecraft() {
         return Err(report_failure(
             status,
-            STATUS_LAUNCH_FAILED,
+            "launcher.status.launchFailed.name",
             UiDialog::error("launcher.error.openMinecraft.name").with_arg(&error),
             error,
         ));
     }
 
-    let pid = wait_for_process(MC_PROCESS_NAME).map_err(|error| {
+    let pid = wait_for_process("Minecraft.Windows.exe").map_err(|error| {
         report_failure(
             status,
-            STATUS_MINECRAFT_NOT_FOUND,
+            "launcher.status.minecraftNotFound.name",
             UiDialog::error("launcher.error.minecraftNotFound.name").with_arg(&error),
             error,
         )
@@ -368,7 +348,7 @@ fn verify_minecraft_supported(
     let minecraft_path = injector::get_process_image_path(pid).map_err(|error| {
         report_failure(
             status,
-            STATUS_VERIFY_FAILED,
+            "launcher.status.verifyFailed.name",
             UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
             error,
         )
@@ -425,7 +405,7 @@ fn verify_minecraft_supported(
 
                     return Err(report_failure(
                         status,
-                        STATUS_UNSUPPORTED_MINECRAFT,
+                        "launcher.status.unsupportedMinecraft.name",
                         UiDialog::error("launcher.error.unsupportedMinecraftVersion.name")
                             .with_arg(&package_version)
                             .with_arg(metadata.version())
@@ -456,7 +436,7 @@ fn verify_minecraft_supported(
             let error = error.to_string();
             return Err(report_failure(
                 status,
-                STATUS_VERIFY_FAILED,
+                "launcher.status.verifyFailed.name",
                 UiDialog::error("launcher.error.minecraftVersionCheckFailed.name").with_arg(&error),
                 error,
             ));
@@ -474,7 +454,7 @@ fn verify_minecraft_supported(
     let supported_versions = format_supported_versions(metadata.supported_minecraft_versions());
     Err(report_failure(
         status,
-        STATUS_UNSUPPORTED_MINECRAFT,
+        "launcher.status.unsupportedMinecraft.name",
         UiDialog::error("launcher.error.unsupportedMinecraftVersion.name")
             .with_arg(&minecraft_version)
             .with_arg(metadata.version())
@@ -508,7 +488,7 @@ fn report_failure(
     // Keep status visible while user reads dialog, then revert to idle
     // Typical dialog dismissal time is 2-5 seconds, use 5 second timeout
     thread::sleep(Duration::from_secs(6));
-    status.emit(UiMessage::new(STATUS_IDLE));
+    status.emit(UiMessage::new("launcher.status.idle.name"));
     error.mark_dialog_shown()
 }
 
@@ -615,7 +595,8 @@ async fn prepare_release_dll(
     let needs_download = !release_cached || cached_metadata.is_none() || has_newer_release;
 
     if needs_download {
-        let _download_animation = StatusAnimation::start(status.clone(), STATUS_DOWNLOADING_ASSETS);
+        let _download_animation =
+            StatusAnimation::start(status.clone(), "launcher.status.downloadingAssets.name");
         release::download_build(BuildKind::Release, build_path).await?;
     }
 
@@ -652,7 +633,8 @@ async fn prepare_mutable_build(
     status: &StatusEmitter,
 ) -> Result<(), String> {
     let cached_assets_exist = release::has_required_assets(build, build_path);
-    let _download_animation = StatusAnimation::start(status.clone(), STATUS_DOWNLOADING_ASSETS);
+    let _download_animation =
+        StatusAnimation::start(status.clone(), "launcher.status.downloadingAssets.name");
 
     // Nightly and debug are mutable tags, so refresh them when possible.
     match release::download_build(build, build_path).await {
@@ -802,7 +784,11 @@ fn launch_minecraft() -> Result<(), String> {
             )?;
 
         activation_manager
-            .ActivateApplication(MC_AUMID, PCWSTR::null(), AO_NONE)
+            .ActivateApplication(
+                w!("MICROSOFT.MINECRAFTUWP_8wekyb3d8bbwe!Game"),
+                PCWSTR::null(),
+                AO_NONE,
+            )
             .map_err(|_| "Minecraft does not seem to be installed.".to_string())?;
     }
 
@@ -810,13 +796,10 @@ fn launch_minecraft() -> Result<(), String> {
 }
 
 fn wait_for_process(process_name: &str) -> Result<u32, String> {
-    for attempt in 0..PROCESS_LOOKUP_ATTEMPTS {
-        crate::log_info!(
-            "Waiting for {process_name}... ({}/{PROCESS_LOOKUP_ATTEMPTS})",
-            attempt + 1
-        );
+    for attempt in 0..100 {
+        crate::log_info!("Waiting for {process_name}... ({}/100)", attempt + 1);
 
-        thread::sleep(PROCESS_LOOKUP_DELAY);
+        thread::sleep(Duration::from_millis(50));
 
         if let Some(pid) = injector::find_process_id(process_name)? {
             crate::log_info!("{process_name} found with PID: {pid}");
