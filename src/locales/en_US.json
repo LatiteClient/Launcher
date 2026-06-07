@@ -61,7 +61,6 @@
     "launcher.status.injecting.name": "Status: Injecting{}",
     "launcher.status.openingMinecraft.name": "Status: Opening Minecraft",
     "launcher.status.loadingMinecraft.name": "Status: Loading Minecraft{}",
-    "launcher.status.finalizing.name": "Status: Finalizing{}",
     "launcher.status.success.name": "Status: Successfully injected",
     "launcher.status.injectFailed.name": "Status: Failed to inject",
     "launcher.status.launchFailed.name": "Status: Cannot open Minecraft",
