@@ -83,6 +83,9 @@ const updateNowButton = document.getElementById("updateNowButton");
 const duplicateInstanceModal = document.getElementById("duplicateInstanceModal");
 const duplicateInstanceModalOverlay =
 	duplicateInstanceModal?.querySelector(".modalOverlay");
+const duplicateInstanceModalContent = document.getElementById(
+	"duplicateInstanceModalContent",
+);
 const duplicateInstanceModalClose = document.getElementById(
 	"duplicateInstanceModalClose",
 );
@@ -439,6 +442,22 @@ function closeDuplicateInstanceModal() {
 
 	duplicateInstanceModal.classList.add("hidden");
 	duplicateInstanceModal.setAttribute("aria-hidden", "true");
+}
+
+function registerModalWindowDragging(modalContent, interactiveSelector) {
+	modalContent?.addEventListener("pointerdown", (event) => {
+		if (
+			event.button !== 0 ||
+			!(event.target instanceof Element) ||
+			event.target.closest(interactiveSelector)
+		) {
+			return;
+		}
+
+		appWindow.startDragging().catch((error) => {
+			console.error("Failed to drag launcher window from dialog:", error);
+		});
+	});
 }
 
 function getLauncherReleaseUrl(version) {
@@ -1402,21 +1421,14 @@ function registerPrimaryEventListeners() {
 	launcherDialogModalOverlay?.addEventListener("click", closeLauncherDialog);
 	launcherDialogModalClose?.addEventListener("click", closeLauncherDialog);
 	launcherDialogOkButton?.addEventListener("click", closeLauncherDialog);
-	launcherDialogContent?.addEventListener("pointerdown", (event) => {
-		if (
-			event.button !== 0 ||
-			!(event.target instanceof Element) ||
-			event.target.closest(
-				"#launcherDialogClose, button, a, input, select, textarea, [role='button']",
-			)
-		) {
-			return;
-		}
-
-		appWindow.startDragging().catch((error) => {
-			console.error("Failed to drag launcher window from dialog:", error);
-		});
-	});
+	registerModalWindowDragging(
+		duplicateInstanceModalContent,
+		"#duplicateInstanceModalClose, button, a, input, select, textarea, [role='button']",
+	);
+	registerModalWindowDragging(
+		launcherDialogContent,
+		"#launcherDialogClose, button, a, input, select, textarea, [role='button']",
+	);
 }
 
 async function initializeOptionInputs() {
