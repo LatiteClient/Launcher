@@ -9,6 +9,7 @@ import { locale as getSystemLocale } from "@tauri-apps/api/os";
 import { open as openUrl } from "@tauri-apps/api/shell";
 import { readText as readClipboardText } from "@tauri-apps/api/clipboard";
 import { checkUpdate, installUpdate } from "@tauri-apps/api/updater";
+import { appWindow } from "@tauri-apps/api/window";
 
 const AUTO_LOCALE = "auto";
 const DEFAULT_LOCALE = "en_US";
@@ -90,6 +91,7 @@ const duplicateInstanceOkButton = document.getElementById(
 const launcherDialogModal = document.getElementById("launcherDialogModal");
 const launcherDialogModalOverlay =
 	launcherDialogModal?.querySelector(".modalOverlay");
+const launcherDialogContent = document.getElementById("launcherDialogContent");
 const launcherDialogModalClose = document.getElementById("launcherDialogClose");
 const launcherDialogTitle = document.getElementById("launcherDialogTitle");
 const launcherDialogMessage = document.getElementById("launcherDialogMessage");
@@ -1372,6 +1374,21 @@ function registerPrimaryEventListeners() {
 	launcherDialogModalOverlay?.addEventListener("click", closeLauncherDialog);
 	launcherDialogModalClose?.addEventListener("click", closeLauncherDialog);
 	launcherDialogOkButton?.addEventListener("click", closeLauncherDialog);
+	launcherDialogContent?.addEventListener("pointerdown", (event) => {
+		if (
+			event.button !== 0 ||
+			!(event.target instanceof Element) ||
+			event.target.closest(
+				"#launcherDialogClose, button, a, input, select, textarea, [role='button']",
+			)
+		) {
+			return;
+		}
+
+		appWindow.startDragging().catch((error) => {
+			console.error("Failed to drag launcher window from dialog:", error);
+		});
+	});
 }
 
 async function initializeOptionInputs() {
