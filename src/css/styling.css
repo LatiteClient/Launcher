@@ -301,6 +301,10 @@ body {
   justify-content: center;
   gap: 2px;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding-inline: 12px;
   transition:
     filter 0.15s ease-out,
     scale 0.2s cubic-bezier(0.09, 0.63, 0.55, 1);
@@ -329,35 +333,33 @@ body {
   align-items: center;
   justify-content: end;
   width: 100%;
+  min-width: 0;
   margin-top: 1px;
 }
 
-#launchSubtext {
-  color: #f0f0f0a8;
-  align-self: center;
-  font:
-    400 14px "Segoe UI",
-    sans-serif;
-  text-align: center;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  white-space: nowrap;
-  transition: none;
-  line-height: 1.05;
-}
-
+#launchSubtext,
 .status-message {
   color: #f0f0f0a8;
   align-self: center;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   font:
     400 14px "Segoe UI",
     sans-serif;
   text-align: center;
+  text-overflow: ellipsis;
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
   white-space: nowrap;
+}
+
+#launchSubtext {
+  transition: none;
+  line-height: 1.05;
 }
 
 .status-slide-enter {
