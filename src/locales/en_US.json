@@ -58,6 +58,7 @@
     "launcher.instanceAlreadyOpen.message.name": "A second launcher window was prevented from opening because Latite Client Launcher is already running. Use this window to launch Latite Client.\n\nYou can disable this behavior in Settings.",
     "launcher.instanceAlreadyOpen.action.name": "Got it",
     "launcher.status.idle.name": "Status: Idle",
+    "launcher.status.downloadingAssets.name": "Status: Downloading assets{}",
     "launcher.status.injecting.name": "Status: Injecting{}",
     "launcher.status.openingMinecraft.name": "Status: Opening Minecraft",
     "launcher.status.loadingMinecraft.name": "Status: Loading Minecraft{}",

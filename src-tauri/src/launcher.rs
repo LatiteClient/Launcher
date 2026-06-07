@@ -36,6 +36,7 @@ const MC_PROCESS_NAME: &str = "Minecraft.Windows.exe";
 const MC_AUMID: PCWSTR = w!("MICROSOFT.MINECRAFTUWP_8wekyb3d8bbwe!Game");
 const STATUS_EVENT: &str = "inject_status";
 const STATUS_IDLE: &str = "launcher.status.idle.name";
+const STATUS_DOWNLOADING_ASSETS: &str = "launcher.status.downloadingAssets.name";
 const STATUS_INJECTING: &str = "launcher.status.injecting.name";
 const STATUS_OPENING_MINECRAFT: &str = "launcher.status.openingMinecraft.name";
 const STATUS_LOADING_MINECRAFT: &str = "launcher.status.loadingMinecraft.name";
@@ -189,28 +190,30 @@ pub async fn inject(
     })?;
     crate::log_info!("Injecting...");
 
-    let resolved_dll = resolve_dll(state, request).await.map_err(|error| {
-        // Distinguish between invalid DLL path and DLL preparation errors
-        if error.contains("does not exist")
-            || error.contains("is not a file")
-            || error.contains("is not a DLL")
-            || error.contains("Failed to resolve DLL path")
-        {
-            report_failure(
-                &status,
-                STATUS_INVALID_DLL_PATH,
-                UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
-                error,
-            )
-        } else {
-            report_failure(
-                &status,
-                STATUS_PREPARING_DLL,
-                UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
-                error,
-            )
-        }
-    })?;
+    let resolved_dll = resolve_dll(state, request, &status)
+        .await
+        .map_err(|error| {
+            // Distinguish between invalid DLL path and DLL preparation errors
+            if error.contains("does not exist")
+                || error.contains("is not a file")
+                || error.contains("is not a DLL")
+                || error.contains("Failed to resolve DLL path")
+            {
+                report_failure(
+                    &status,
+                    STATUS_INVALID_DLL_PATH,
+                    UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
+                    error,
+                )
+            } else {
+                report_failure(
+                    &status,
+                    STATUS_PREPARING_DLL,
+                    UiDialog::error("launcher.error.prepareDll.name").with_arg(&error),
+                    error,
+                )
+            }
+        })?;
     let worker_app_handle = app_handle.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
@@ -517,12 +520,16 @@ fn wait_for_minimum_duration(started_at: Instant, minimum_duration: Duration) {
     }
 }
 
-async fn resolve_dll(state: &AppState, request: InjectRequest) -> Result<ResolvedDll, String> {
+async fn resolve_dll(
+    state: &AppState,
+    request: InjectRequest,
+    status: &StatusEmitter,
+) -> Result<ResolvedDll, String> {
     let InjectRequest { dll_path, build } = request;
 
     match dll_path {
         Some(dll_path) => resolve_custom_dll(dll_path).await,
-        None => prepare_latite_dll(state, resolve_latite_build(state, build)?).await,
+        None => prepare_latite_dll(state, resolve_latite_build(state, build)?, status).await,
     }
 }
 
@@ -536,13 +543,19 @@ fn resolve_latite_build(
     }
 }
 
-async fn prepare_latite_dll(state: &AppState, build: BuildKind) -> Result<ResolvedDll, String> {
+async fn prepare_latite_dll(
+    state: &AppState,
+    build: BuildKind,
+    status: &StatusEmitter,
+) -> Result<ResolvedDll, String> {
     let build_path = paths::get_latite_build_path(build)?;
     let dll_path = build_path.join(release::latite_dll_file_name(build));
 
     match build {
-        BuildKind::Release => prepare_release_dll(state, &build_path, &dll_path).await?,
-        BuildKind::Nightly | BuildKind::Debug => prepare_mutable_build(build, &build_path).await?,
+        BuildKind::Release => prepare_release_dll(state, &build_path, &dll_path, status).await?,
+        BuildKind::Nightly | BuildKind::Debug => {
+            prepare_mutable_build(build, &build_path, status).await?
+        }
     }
 
     if !release::has_required_assets(build, &build_path) {
@@ -574,6 +587,7 @@ async fn prepare_release_dll(
     state: &AppState,
     build_path: &Path,
     dll_path: &Path,
+    status: &StatusEmitter,
 ) -> Result<(), String> {
     let previous_version = state.get_last_used_version()?;
     let cached_metadata = read_cached_latite_metadata(dll_path);
@@ -601,6 +615,7 @@ async fn prepare_release_dll(
     let needs_download = !release_cached || cached_metadata.is_none() || has_newer_release;
 
     if needs_download {
+        let _download_animation = StatusAnimation::start(status.clone(), STATUS_DOWNLOADING_ASSETS);
         release::download_build(BuildKind::Release, build_path).await?;
     }
 
@@ -631,8 +646,13 @@ fn read_cached_latite_metadata(dll_path: &Path) -> Option<LatiteDllMetadata> {
     }
 }
 
-async fn prepare_mutable_build(build: BuildKind, build_path: &Path) -> Result<(), String> {
+async fn prepare_mutable_build(
+    build: BuildKind,
+    build_path: &Path,
+    status: &StatusEmitter,
+) -> Result<(), String> {
     let cached_assets_exist = release::has_required_assets(build, build_path);
+    let _download_animation = StatusAnimation::start(status.clone(), STATUS_DOWNLOADING_ASSETS);
 
     // Nightly and debug are mutable tags, so refresh them when possible.
     match release::download_build(build, build_path).await {
