@@ -42,11 +42,18 @@ const RELEASE_ASSETS: [AssetDownload; 1] = [AssetDownload {
     repo: LATITE_REPO,
     release: ReleaseRef::Latest,
 }];
-const NIGHTLY_ASSETS: [AssetDownload; 1] = [AssetDownload {
-    file_name: "LatiteNightly.dll",
-    repo: LATITE_REPO,
-    release: ReleaseRef::Tag("nightly"),
-}];
+const NIGHTLY_ASSETS: [AssetDownload; 2] = [
+    AssetDownload {
+        file_name: "LatiteNightly.dll",
+        repo: LATITE_REPO,
+        release: ReleaseRef::Tag("nightly"),
+    },
+    AssetDownload {
+        file_name: "LatiteNightly.pdb",
+        repo: LATITE_REPO,
+        release: ReleaseRef::Tag("nightly"),
+    },
+];
 const DEBUG_ASSETS: [AssetDownload; 2] = [
     AssetDownload {
         file_name: "LatiteDebug.dll",
