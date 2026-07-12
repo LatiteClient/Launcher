@@ -37,7 +37,7 @@ impl LatiteDllMetadata {
     pub fn supports_minecraft_version(&self, minecraft_version: &str) -> bool {
         self.supported_minecraft_versions
             .iter()
-            .any(|version| versions_equivalent(version, minecraft_version))
+            .any(|version| supported_version_matches(version, minecraft_version))
     }
 }
 
@@ -47,6 +47,23 @@ pub fn read_metadata(dll_path: &Path) -> Result<LatiteDllMetadata, String> {
 
 pub fn versions_equivalent(left: &str, right: &str) -> bool {
     normalize_version(left).eq_ignore_ascii_case(&normalize_version(right))
+}
+
+pub fn supported_version_matches(pattern: &str, minecraft_version: &str) -> bool {
+    let pattern = normalize_version(pattern);
+    let minecraft_version = normalize_version(minecraft_version);
+
+    pattern.len() == minecraft_version.len()
+        && pattern
+            .bytes()
+            .zip(minecraft_version.bytes())
+            .all(|(pattern_byte, version_byte)| {
+                if matches!(pattern_byte, b'x' | b'X') {
+                    version_byte.is_ascii_digit()
+                } else {
+                    pattern_byte.eq_ignore_ascii_case(&version_byte)
+                }
+            })
 }
 
 unsafe fn read_metadata_inner(dll_path: &Path) -> Result<LatiteDllMetadata, String> {

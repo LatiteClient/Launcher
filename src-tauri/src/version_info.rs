@@ -57,14 +57,18 @@ pub fn match_supported_package_version<'a>(
 
             if major != package_major
                 || minor != package_minor
-                || !package_build.starts_with(&patch.to_string())
+                || !version_pattern_matches_prefix(patch, &package_build)
             {
                 return None;
             }
 
-            Some((patch.to_string().len(), version.as_str()))
+            let concrete_characters = patch
+                .bytes()
+                .filter(|character| !matches!(character, b'x' | b'X'))
+                .count();
+            Some(((patch.len(), concrete_characters), version.as_str()))
         })
-        .max_by_key(|(patch_len, _)| *patch_len)
+        .max_by_key(|(specificity, _)| *specificity)
         .map(|(_, version)| version)
 }
 
@@ -186,19 +190,39 @@ mod tests {
             None
         );
     }
+
 }
 
-fn parse_three_part_version(version: &str) -> Option<(u16, u16, u16)> {
+fn parse_three_part_version(version: &str) -> Option<(u16, u16, &str)> {
     let normalized = version.trim().trim_start_matches(['v', 'V']).trim();
     let mut parts = normalized.split('.');
 
     let major = parts.next()?.parse().ok()?;
     let minor = parts.next()?.parse().ok()?;
-    let patch = parts.next()?.parse().ok()?;
+    let patch = parts.next()?;
 
-    if parts.next().is_some() {
+    if parts.next().is_some()
+        || patch.is_empty()
+        || !patch
+            .bytes()
+            .all(|character| character.is_ascii_digit() || matches!(character, b'x' | b'X'))
+    {
         return None;
     }
 
     Some((major, minor, patch))
+}
+
+fn version_pattern_matches_prefix(pattern: &str, version: &str) -> bool {
+    pattern.len() <= version.len()
+        && pattern
+            .bytes()
+            .zip(version.bytes())
+            .all(|(pattern_byte, version_byte)| {
+                if matches!(pattern_byte, b'x' | b'X') {
+                    version_byte.is_ascii_digit()
+                } else {
+                    pattern_byte == version_byte
+                }
+            })
 }
