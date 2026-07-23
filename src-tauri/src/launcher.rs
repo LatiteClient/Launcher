@@ -11,13 +11,7 @@ use std::{
 };
 
 use crate::{
-    app_state::AppState,
-    inject as injector,
-    latite_dll::{self, LatiteDllMetadata},
-    launch_request::{BuildKind, InjectRequest},
-    paths, release,
-    ui::{self, UiDialog, UiMessage},
-    version_info,
+    app_state::AppState, inject as injector, latite_dll::{self, LatiteDllMetadata}, launch_request::{BuildKind, InjectRequest}, minecraft, paths, release, ui::{self, UiDialog, UiMessage}, version_info,
 };
 use tauri::{AppHandle, Manager};
 use windows::{
@@ -319,7 +313,7 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
     crate::log_info!("Minecraft process not found - launching Minecraft");
     status.emit_key("launcher.status.openingMinecraft.name");
 
-    if let Err(error) = launch_minecraft() {
+    if let Err(error) = minecraft::launch_installed_minecraft_executable() {
         return Err(report_failure(
             status,
             "launcher.status.launchFailed.name",
@@ -756,6 +750,7 @@ async fn download_custom_dll(url: &str) -> Result<PathBuf, String> {
     Ok(downloaded_dll_path)
 }
 
+#[deprecated(note = "Use `minecraft::launch_installed_minecraft_executable()` instead.")]
 fn launch_minecraft() -> Result<(), String> {
     struct ComInitializationGuard(bool);
 

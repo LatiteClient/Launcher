@@ -16,6 +16,7 @@ mod release;
 mod single_instance;
 mod ui;
 mod version_info;
+mod minecraft;
 
 use app_state::AppState;
 use launch_request::{BuildKind, InjectRequest};
