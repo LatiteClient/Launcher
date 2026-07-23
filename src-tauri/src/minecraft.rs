@@ -6,7 +6,7 @@ use std::{
 
 use windows::core::{w, HSTRING};
 use windows::Management::Deployment::PackageManager;
-use windows::Win32::System::Threading::{CREATE_NO_WINDOW, DETACHED_PROCESS};
+use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use windows::Win32::UI::Shell::{FOLDERID_System, SHGetKnownFolderPath, KF_FLAG_DEFAULT};
 
 const POWERSHELL_COMMAND: &str = "Invoke-CommandInDesktopPackage -PackageFamilyName 'Microsoft.MinecraftUWP_8wekyb3d8bbwe' -AppId 'Game' -Command '{}'";
@@ -59,7 +59,7 @@ pub fn launch_installed_minecraft_executable() -> Result<(), String> {
     let powershell = POWERSHELL_EXECUTABLE.as_os_str();
     let mut process = Command::new(&powershell);
 
-    process.creation_flags((CREATE_NO_WINDOW).0);
+    process.creation_flags(CREATE_NO_WINDOW.0);
 
     process.arg("-NoProfile");
     process.arg("-NonInteractive");
