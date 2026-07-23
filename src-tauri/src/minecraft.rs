@@ -27,29 +27,39 @@ static POWERSHELL_EXECUTABLE: LazyLock<PathBuf> = LazyLock::new(|| unsafe {
 
 static PACKAGE_MANAGER: LazyLock<PackageManager> = LazyLock::new(|| PackageManager::new().unwrap());
 
-fn get_installed_minecraft_executable() -> Option<String> {
+fn get_installed_minecraft_executable() -> Result<String, String> {
     let packages = match PACKAGE_MANAGER
         .FindPackagesByUserSecurityIdPackageFamilyName(&USER_SECURITY_ID, &PACKAGE_FAMILY_NAME)
     {
         Ok(value) => value,
-        Err(_) => return None,
+        Err(error) => return Err(format!("Couldn't query from package repository: {}", error)),
     };
 
     let package = match packages.into_iter().nth(0) {
         Some(value) => value,
-        None => return None,
+        None => return Err("Minecraft isn't installed for the current user.".to_string()),
     };
 
-    let installed_path = package.InstalledPath().unwrap().to_os_string();
-    let minecraft = PathBuf::from(installed_path).join("Minecraft.Windows.exe");
+    let installed_path = match package.InstalledPath() {
+        Ok(value) => value,
+        Err(error) => {
+            return Err(format!(
+                "Couldn't get Minecraft's installation directory: {}",
+                error
+            ))
+        }
+    };
 
-    Some(minecraft.display().to_string())
+    let path = installed_path.to_os_string();
+    let minecraft = PathBuf::from(path).join("Minecraft.Windows.exe");
+  
+    Ok(minecraft.display().to_string())
 }
 
 pub fn launch_installed_minecraft_executable() -> Result<(), String> {
     let minecraft = match get_installed_minecraft_executable() {
-        Some(value) => value,
-        None => return Err("Minecraft isn't installed for the current user.".to_string()),
+        Ok(value) => value,
+        Err(error) => return Err(error),
     };
 
     if !fs::exists(&minecraft).unwrap_or(false) {
