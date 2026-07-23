@@ -67,6 +67,7 @@
     },
     "windows": [
       {
+        "center": true,
         "fullscreen": false,
         "resizable": false,
         "title": "Latite Client Launcher",
@@ -96,7 +97,10 @@
     },
     "bundle": {
       "active": true,
-      "targets": ["nsis", "updater"],
+      "targets": [
+        "nsis",
+        "updater"
+      ],
       "identifier": "net.latite.launcher",
       "icon": [
         "icons/16x16.png",
