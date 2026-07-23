@@ -40,7 +40,7 @@ fn get_installed_minecraft_executable() -> Result<String, String> {
         None => return Err("Minecraft isn't installed for the current user.".to_string()),
     };
 
-    let installed_path = match package.InstalledPath() {
+    let path = match package.InstalledPath() {
         Ok(value) => value,
         Err(error) => {
             return Err(format!(
@@ -48,11 +48,9 @@ fn get_installed_minecraft_executable() -> Result<String, String> {
                 error
             ))
         }
-    };
+    }.to_os_string();
 
-    let path = installed_path.to_os_string();
-    let minecraft = PathBuf::from(path).join("Minecraft.Windows.exe");
-  
+    let minecraft = PathBuf::from(path).join("Minecraft.Windows.exe");  
     Ok(minecraft.display().to_string())
 }
 
