@@ -8,7 +8,7 @@ use windows::{
     core::{s, PCSTR, PCWSTR},
     Win32::{
         Foundation::{FreeLibrary, HMODULE},
-        System::LibraryLoader::{GetProcAddress, LoadLibraryW},
+        System::LibraryLoader::{GetProcAddress, LoadLibraryExW, DONT_RESOLVE_DLL_REFERENCES},
     },
 };
 
@@ -75,12 +75,18 @@ unsafe fn read_metadata_inner(dll_path: &Path) -> Result<LatiteDllMetadata, Stri
         .chain(std::iter::once(0))
         .collect();
 
-    let module = LoadLibraryW(PCWSTR(dll_path_wide.as_ptr())).map_err(|error| {
+    let module = LoadLibraryExW(
+        PCWSTR(dll_path_wide.as_ptr()),
+        None,
+        DONT_RESOLVE_DLL_REFERENCES,
+    )
+    .map_err(|error| {
         format!(
             "Failed to load {} for metadata inspection: {error}",
             full_dll_path.display()
         )
     })?;
+    
     let module = LoadedModule::new(module);
 
     let get_dll_version: LatiteGetDllVersion = std::mem::transmute(required_export(
