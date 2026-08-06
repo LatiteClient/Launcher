@@ -28,6 +28,8 @@ use windows::{
 
 static MONITORED_PROCESS_IDS: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
 
+const MINECRAFT_START_TIMEOUT: Duration = Duration::from_secs(120);
+
 #[derive(Debug)]
 pub struct LaunchError {
     message: String,
@@ -791,18 +793,38 @@ fn launch_minecraft() -> Result<(), String> {
 }
 
 fn wait_for_process(process_name: &str) -> Result<u32, String> {
-    for attempt in 0..100 {
-        crate::log_info!("Waiting for {process_name}... ({}/100)", attempt + 1);
+    let started_at = Instant::now();
+    let mut next_progress_log = Duration::ZERO;
 
-        thread::sleep(Duration::from_millis(50));
+    crate::log_info!(
+        "Waiting up to {} seconds for {process_name}...",
+        MINECRAFT_START_TIMEOUT.as_secs()
+    );
 
+    loop {
         if let Some(pid) = injector::find_process_id(process_name)? {
             crate::log_info!("{process_name} found with PID: {pid}");
             return Ok(pid);
         }
+
+        let elapsed = started_at.elapsed();
+        if elapsed >= MINECRAFT_START_TIMEOUT {
+            break;
+        }
+
+        if elapsed >= next_progress_log {
+            crate::log_info!(
+                "Still waiting for {process_name}... ({} seconds elapsed)",
+                elapsed.as_secs()
+            );
+            next_progress_log = elapsed + Duration::from_secs(5);
+        }
+
+        thread::sleep(Duration::from_millis(250).min(MINECRAFT_START_TIMEOUT - elapsed));
     }
 
     Err(format!(
-        "{process_name} was not found after launching. Please try launching again, or please make sure Minecraft is installed."
+        "{process_name} was not found within {} seconds after launching. Please try launching again, or please make sure Minecraft is installed.",
+        MINECRAFT_START_TIMEOUT.as_secs()
     ))
 }
