@@ -60,7 +60,7 @@
     "launcher.status.idle.name": "Статус: Ожидание",
     "launcher.status.downloadingAssets.name": "Status: Downloading assets{}",
     "launcher.status.injecting.name": "Статус: Внедрение{}",
-    "launcher.status.openingMinecraft.name": "Статус: Запуск Minecraft",
+    "launcher.status.openingMinecraft.name": "Статус: Запуск Minecraft{}",
     "launcher.status.loadingMinecraft.name": "Статус: Загрузка Minecraft{}",
     "launcher.status.success.name": "Статус: Внедрение выполнено успешно",
     "launcher.status.injectFailed.name": "Статус: Ошибка внедрения",

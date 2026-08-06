@@ -51,7 +51,7 @@
     "launcher.dialog.updateAvailable.name": "Nowa wersja Launchera Latite jest dostępna. Najnowsza wersja: {}",
     "launcher.status.idle.name": "Stan: Bezczynność",
     "launcher.status.injecting.name": "Stan: Ładowanie{}",
-    "launcher.status.openingMinecraft.name": "Stan: Uruchamianie Minecrafta",
+    "launcher.status.openingMinecraft.name": "Stan: Uruchamianie Minecrafta{}",
     "launcher.status.loadingMinecraft.name": "Stan: Ładowanie Minecrafta{}",
     "launcher.status.finalizing.name": "Stan: Finalizowanie{}",
     "launcher.status.success.name": "Stan: Pomyślnie załadowano operację",

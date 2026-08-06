@@ -84,10 +84,6 @@ impl StatusEmitter {
         }
     }
 
-    fn emit_key(&self, key: &str) {
-        self.emit(UiMessage::new(key));
-    }
-
     fn emit_dialog(&self, dialog: UiDialog) {
         ui::emit_dialog(&self.app_handle, &dialog);
     }
@@ -313,7 +309,8 @@ fn find_or_launch_minecraft(status: &StatusEmitter) -> Result<(u32, bool), Launc
     }
 
     crate::log_info!("Minecraft process not found - launching Minecraft");
-    status.emit_key("launcher.status.openingMinecraft.name");
+    let _opening_animation =
+        StatusAnimation::start(status.clone(), "launcher.status.openingMinecraft.name");
 
     if let Err(error) = minecraft::launch_installed_minecraft_executable() {
         return Err(report_failure(

@@ -46,7 +46,7 @@
     "launcher.dialog.updateAvailable.name": "یک نسخه جدید از لانچر لتیت در دسترس است. اخرین نسخه: {}",
     "launcher.status.idle.name": "وضعیت: آماده به کار",
     "launcher.status.injecting.name": "وضعیت: درحال اینجکت{}",
-    "launcher.status.openingMinecraft.name": "وضعیت: درحال باز کردن ماینکرفت",
+    "launcher.status.openingMinecraft.name": "وضعیت: درحال باز کردن ماینکرفت{}",
     "launcher.status.loadingMinecraft.name": "وضعیت: درحال لود کردن ماینکرفت{}",
     "launcher.status.finalizing.name": "وضعیت: درحال نهایی کردن",
     "launcher.status.success.name": "وضعیت: با موفقیت اینجکت شد",

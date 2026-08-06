@@ -60,7 +60,7 @@
     "launcher.status.idle.name": "Stav: Nečinný",
     "launcher.status.downloadingAssets.name": "Stav: Stahování dat{}",
     "launcher.status.injecting.name": "Stav: Připojování{}",
-    "launcher.status.openingMinecraft.name": "Stav: Otevírání Minecraftu",
+    "launcher.status.openingMinecraft.name": "Stav: Otevírání Minecraftu{}",
     "launcher.status.loadingMinecraft.name": "Stav: Načítání Minecraftu{}",
     "launcher.status.success.name": "Stav: Úspěšně připojeno",
     "launcher.status.injectFailed.name": "Stav: Připojení se nezdařilo",

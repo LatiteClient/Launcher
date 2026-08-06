@@ -60,7 +60,7 @@
     "launcher.status.idle.name": "상태: 대기 중",
     "launcher.status.downloadingAssets.name": "상태: 애셋 다운로드 중{}",
     "launcher.status.injecting.name": "상태: 인젝트 중{}",
-    "launcher.status.openingMinecraft.name": "상태: Minecraft 실행 중",
+    "launcher.status.openingMinecraft.name": "상태: Minecraft 실행 중{}",
     "launcher.status.loadingMinecraft.name": "상태: Minecraft 로딩 중",
     "launcher.status.success.name": "상태: 성공적으로 인젝트됨",
     "launcher.status.injectFailed.name": "상태: 인젝트에 실패함",

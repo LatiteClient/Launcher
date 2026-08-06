@@ -60,7 +60,7 @@
     "launcher.status.idle.name": "Estado: inactivo",
     "launcher.status.downloadingAssets.name": "Estado: Descargando recursos{}",
     "launcher.status.injecting.name": "Estado: Inyectando{}",
-    "launcher.status.openingMinecraft.name": "Estado: Abriendo Minecraft",
+    "launcher.status.openingMinecraft.name": "Estado: Abriendo Minecraft{}",
     "launcher.status.loadingMinecraft.name": "Estado: Cargando Minecraft{}",
     "launcher.status.success.name": "Estado: inyectado con éxito",
     "launcher.status.injectFailed.name": "Estado: No se pudo inyectar",

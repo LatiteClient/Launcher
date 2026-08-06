@@ -61,7 +61,7 @@
     "launcher.status.idle.name": "الحالة: مثالية",
     "launcher.status.downloadingAssets.name": "الحالة: تنزيل أصول الملفات",
     "launcher.status.injecting.name": "الحالة: الحقن{}",
-    "launcher.status.openingMinecraft.name": "الحالة: يتم فتح Minecraft",
+    "launcher.status.openingMinecraft.name": "الحالة: يتم فتح Minecraft{}",
     "launcher.status.loadingMinecraft.name": "الحالة: تحميل Minecraft{}",
     "launcher.status.success.name": "الحالة: تم الحقن بنجاح",
     "launcher.status.injectFailed.name": "الحالة: فشل الحقن",

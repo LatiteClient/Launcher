@@ -60,7 +60,7 @@
     "launcher.status.idle.name": "ステータス: 待機中",
     "launcher.status.downloadingAssets.name": "ステータス: アセットをダウンロード中{}",
     "launcher.status.injecting.name": "ステータス: 起動中{}",
-    "launcher.status.openingMinecraft.name": "ステータス: マインクラフトを起動中",
+    "launcher.status.openingMinecraft.name": "ステータス: マインクラフトを起動中{}",
     "launcher.status.loadingMinecraft.name": "ステータス: マインクラフトが読み込み中{}",
     "launcher.status.success.name": "ステータス: 正常に起動しました",
     "launcher.status.injectFailed.name": "ステータス: 起動に失敗しました",
