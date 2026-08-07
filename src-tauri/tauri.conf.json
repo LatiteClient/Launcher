@@ -102,6 +102,11 @@
         "updater"
       ],
       "identifier": "net.latite.launcher",
+      "publisher": "Latite Client Team",
+      "copyright": "Copyright © 2026 Latite Client Team",
+      "category": "Game",
+      "shortDescription": "Latite Client's Launcher for Minecraft Bedrock Edition.",
+      "longDescription": "Installs, updates, and launches Latite Client for Minecraft Bedrock Edition.",
       "icon": [
         "icons/16x16.png",
         "icons/24x24.png",
